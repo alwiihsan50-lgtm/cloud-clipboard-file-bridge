@@ -121,6 +121,8 @@
     button.subtle-danger { width: auto; min-height: 32px; margin: 0; padding: 7px 9px; background: transparent; color: var(--danger); border: 1px solid var(--danger-line); font-size: 12px; }
     button.inline { width: auto; min-height: 34px; margin: 0; padding: 7px 10px; font-size: 13px; }
     .shell {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr);
       overflow: hidden;
       min-height: 0;
       border: 1px solid rgb(255 255 255 / .08);
@@ -128,9 +130,15 @@
       background: linear-gradient(180deg, rgb(18 31 39 / .96), rgb(13 24 31 / .96));
       box-shadow: var(--shadow);
     }
+    #appPanel:not(.hidden) {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      min-height: 0;
+      height: 100%;
+    }
     .content-pane { min-height: 0; padding: 12px 12px 10px; overflow: auto; overscroll-behavior: contain; }
     .sync-pane { display: grid; grid-template-rows: auto auto auto auto auto auto auto; overflow: hidden; }
-    .history-pane { display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
+    .history-pane { display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: auto; -webkit-overflow-scrolling: touch; }
     .pair-card { padding: 12px; border-top: 1px solid var(--line); }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .tabs {
