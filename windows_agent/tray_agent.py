@@ -111,6 +111,10 @@ def copy_cloud_url() -> None:
     agent.notify("CloudBridge", "Cloud URL copied.")
 
 
+def open_manager() -> None:
+    os.startfile(APP_URL)
+
+
 def create_pairing_link() -> None:
     try:
         data = agent.create_pairing("Windows PC")
@@ -150,6 +154,7 @@ def main() -> None:
     menu = pystray.Menu(
         item(lambda _: status_title(), None, enabled=False),
         item("Show pairing link", create_pairing_link),
+        item("Open CloudBridge Manager", open_manager),
         item("Copy cloud URL", copy_cloud_url),
         item("Open downloads folder", open_downloads),
         item("Open logs", open_logs),

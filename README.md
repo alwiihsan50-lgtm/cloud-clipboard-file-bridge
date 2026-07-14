@@ -44,10 +44,17 @@ POST /api/pairing/create
 POST /api/pairing/claim
 POST /api/clipboard/push
 GET  /api/clipboard/latest
+GET  /api/clipboard/history
+POST /api/clipboard/{id}/pin
+POST /api/clipboard/{id}/unpin
 POST /api/files/upload
 GET  /api/files/pending
+GET  /api/files/history
 GET  /api/files/{id}/download
 POST /api/files/{id}/ack
+POST /api/files/{id}/pin
+POST /api/files/{id}/unpin
+POST /api/cleanup
 ```
 
 Endpoint publik hanya `/health` dan `/api/pairing/claim`. Endpoint lain memakai:
@@ -96,8 +103,22 @@ Windows Agent membuka koneksi Supabase Realtime supaya update dari iPhone terasa
 - Server memakai aturan `last-write-wins` berdasarkan urutan `version` dari database.
 - Windows Agent mengirim `device_id`; endpoint latest tidak mengirim echo balik ke device pengirim.
 - File masuk ke bucket private `cloudbridge-files`.
-- Setelah Windows mengirim `ack`, file ditandai `downloaded` dan object storage dihapus.
-- TTL file default adalah 24 jam.
+- Clipboard dan file punya status `pinned`; item pinned tidak ikut cleanup otomatis.
+- Setelah Windows mengirim `ack`, file ditandai `downloaded`, tetapi object storage tidak langsung dihapus.
+- Cleanup otomatis berjalan oportunistik maksimal 1x per 24 jam setelah operasi tulis penting.
+- Clipboard unpinned disimpan 7 hari.
+- File unpinned dihapus cleanup jika sudah `downloaded` lebih dari 24 jam, atau expired lebih dari 24 jam.
+- TTL file default adalah 24 jam, tetapi file pinned tetap bisa disimpan sampai user melakukan unpin.
+
+## CloudBridge Manager
+
+PWA iPhone memiliki tab `Clipboard History` dan `Files History` untuk melihat item terbaru dan melakukan `Pin` / `Unpin`.
+
+Di Windows tray, menu `Open CloudBridge Manager` membuka PWA manager:
+
+```text
+https://alwiihsan50-lgtm.github.io/cloud-clipboard-file-bridge/app/
+```
 
 ## Catatan PWA
 

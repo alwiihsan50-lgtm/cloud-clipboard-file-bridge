@@ -21,7 +21,17 @@
     button { margin-top: 10px; padding: 13px 14px; border: 0; background: #5eead4; color: #042f2e; font-weight: 850; }
     button.secondary { background: #284156; color: #f8fafc; }
     button.danger { background: #fca5a5; color: #450a0a; }
+    button.inline { width: auto; margin-top: 0; padding: 8px 10px; font-size: 13px; }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .tabs button { min-height: 44px; background: #284156; color: #f8fafc; font-size: 12px; line-height: 1.15; }
+    .tabs button.active { background: #5eead4; color: #042f2e; }
+    .list { display: grid; gap: 10px; margin-top: 12px; }
+    .list-item { border: 1px solid #2d4052; border-radius: 8px; padding: 12px; background: #132230; }
+    .list-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .preview { white-space: pre-wrap; word-break: break-word; color: #f8fafc; line-height: 1.35; }
+    .meta { color: #9fb4c6; font-size: 12px; margin-top: 7px; }
+    .empty { color: #9fb4c6; padding: 12px 0; }
     .pill { border: 1px solid #375066; border-radius: 999px; padding: 7px 10px; color: #a8c7dd; font-size: 13px; }
     .status { margin-top: 16px; padding: 12px; border-radius: 8px; background: #172a3a; color: #cbd5e1; min-height: 24px; }
     .hidden { display: none; }
@@ -36,6 +46,12 @@
     <button id="pairBtn">Pair iPhone</button>
   </section>
   <section id="appPanel" class="hidden">
+    <div class="tabs">
+      <button id="syncTab" class="active">Sync</button>
+      <button id="clipTab">Clipboard History</button>
+      <button id="filesTab">Files History</button>
+    </div>
+    <div id="syncView">
     <label for="content">Text</label>
     <textarea id="content" placeholder="Paste text here, or pull latest text from PC."></textarea>
     <div class="row"><button id="pasteBtn" class="secondary">Paste</button><button id="copyBtn" class="secondary">Copy</button></div>
@@ -45,6 +61,15 @@
     <input id="file" type="file">
     <button id="fileBtn">Send File to PC</button>
     <button id="resetBtn" class="danger">Forget Pairing</button>
+    </div>
+    <div id="clipboardView" class="hidden">
+      <button id="refreshClipboardBtn" class="secondary">Refresh Clipboard History</button>
+      <div id="clipboardList" class="list"></div>
+    </div>
+    <div id="filesView" class="hidden">
+      <button id="refreshFilesBtn" class="secondary">Refresh Files History</button>
+      <div id="filesList" class="list"></div>
+    </div>
   </section>
   <div id="status" class="status">Ready.</div>
 </main>
@@ -63,9 +88,41 @@ const pairState = document.getElementById("pairState");
 const pairPanel = document.getElementById("pairPanel");
 const appPanel = document.getElementById("appPanel");
 const content = document.getElementById("content");
+const views = {
+  sync: document.getElementById("syncView"),
+  clipboard: document.getElementById("clipboardView"),
+  files: document.getElementById("filesView")
+};
+const tabButtons = {
+  sync: document.getElementById("syncTab"),
+  clipboard: document.getElementById("clipTab"),
+  files: document.getElementById("filesTab")
+};
 function token() { return localStorage.getItem("cloudbridge_token") || ""; }
 function status(message) { statusBox.textContent = message; }
 function headers(extra = {}) { return { "Authorization": "Bearer " + token(), ...extra }; }
+function showView(name) {
+  Object.keys(views).forEach((key) => {
+    views[key].classList.toggle("hidden", key !== name);
+    tabButtons[key].classList.toggle("active", key === name);
+  });
+  if (name === "clipboard") loadClipboardHistory();
+  if (name === "files") loadFilesHistory();
+}
+function fmtTime(value) {
+  if (!value) return "";
+  try { return new Date(value).toLocaleString(); } catch { return value; }
+}
+function shortText(value, max = 180) {
+  const text = String(value || "");
+  return text.length > max ? text.slice(0, max) + "..." : text;
+}
+function fmtSize(bytes) {
+  const size = Number(bytes || 0);
+  if (size >= 1024 * 1024) return (size / 1024 / 1024).toFixed(1) + " MB";
+  if (size >= 1024) return (size / 1024).toFixed(1) + " KB";
+  return size + " B";
+}
 async function notifyRealtime(kind, item) {
   try {
     await fetch(SUPABASE_BASE + "/realtime/v1/api/broadcast", {
@@ -98,6 +155,67 @@ async function checkPairing() {
   const response = await fetch(API_BASE + "/api/me", { headers: headers() });
   setPaired(response.ok);
   if (!response.ok) localStorage.removeItem("cloudbridge_token");
+}
+async function apiJson(path, options = {}) {
+  const response = await fetch(API_BASE + path, { ...options, headers: headers(options.headers || {}) });
+  if (!response.ok) throw new Error(await response.text());
+  return response.json();
+}
+async function pinClipboard(id, pinned) {
+  await apiJson("/api/clipboard/" + encodeURIComponent(id) + "/" + (pinned ? "unpin" : "pin"), { method: "POST" });
+  await loadClipboardHistory();
+}
+async function pinFile(id, pinned) {
+  await apiJson("/api/files/" + encodeURIComponent(id) + "/" + (pinned ? "unpin" : "pin"), { method: "POST" });
+  await loadFilesHistory();
+}
+async function loadClipboardHistory() {
+  const list = document.getElementById("clipboardList");
+  list.innerHTML = "<div class='empty'>Loading...</div>";
+  try {
+    const data = await apiJson("/api/clipboard/history?limit=50");
+    const items = data.items || [];
+    if (!items.length) { list.innerHTML = "<div class='empty'>No clipboard history.</div>"; return; }
+    list.innerHTML = "";
+    items.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "list-item";
+      row.innerHTML = "<div class='list-head'><div><div class='preview'></div><div class='meta'></div></div><button class='inline'></button></div>";
+      row.querySelector(".preview").textContent = shortText(item.content);
+      row.querySelector(".meta").textContent = (item.pinned ? "Pinned - " : "") + item.source + " - " + fmtTime(item.created_at);
+      const button = row.querySelector("button");
+      button.textContent = item.pinned ? "Unpin" : "Pin";
+      button.onclick = () => pinClipboard(item.id, item.pinned);
+      list.appendChild(row);
+    });
+  } catch (err) {
+    list.innerHTML = "<div class='empty'>Failed to load clipboard history.</div>";
+    status("Clipboard history failed: " + err.message);
+  }
+}
+async function loadFilesHistory() {
+  const list = document.getElementById("filesList");
+  list.innerHTML = "<div class='empty'>Loading...</div>";
+  try {
+    const data = await apiJson("/api/files/history?limit=50");
+    const items = data.items || [];
+    if (!items.length) { list.innerHTML = "<div class='empty'>No file history.</div>"; return; }
+    list.innerHTML = "";
+    items.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "list-item";
+      row.innerHTML = "<div class='list-head'><div><div class='preview'></div><div class='meta'></div></div><button class='inline'></button></div>";
+      row.querySelector(".preview").textContent = item.filename;
+      row.querySelector(".meta").textContent = (item.pinned ? "Pinned - " : "") + item.status + " - " + fmtSize(item.size) + " - " + fmtTime(item.uploaded_at);
+      const button = row.querySelector("button");
+      button.textContent = item.pinned ? "Unpin" : "Pin";
+      button.onclick = () => pinFile(item.id, item.pinned);
+      list.appendChild(row);
+    });
+  } catch (err) {
+    list.innerHTML = "<div class='empty'>Failed to load files history.</div>";
+    status("Files history failed: " + err.message);
+  }
 }
 document.getElementById("pairBtn").onclick = async () => {
   try {
@@ -163,6 +281,7 @@ document.getElementById("fileBtn").onclick = async () => {
     if (!response.ok) throw new Error(await response.text());
     const data = await response.json();
     await notifyRealtime("file", data.item || {});
+    await loadFilesHistory();
     status("File sent. Windows Agent will download it.");
   } catch (err) {
     status("File send failed: " + err.message);
@@ -173,6 +292,11 @@ document.getElementById("resetBtn").onclick = () => {
   setPaired(false);
   status("Pairing removed from this iPhone.");
 };
+tabButtons.sync.onclick = () => showView("sync");
+tabButtons.clipboard.onclick = () => showView("clipboard");
+tabButtons.files.onclick = () => showView("files");
+document.getElementById("refreshClipboardBtn").onclick = loadClipboardHistory;
+document.getElementById("refreshFilesBtn").onclick = loadFilesHistory;
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
 checkPairing().catch(() => setPaired(false));
 </script>

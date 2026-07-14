@@ -29,6 +29,7 @@ Database dan storage:
 - `cloudbridge_pairing_sessions`
 - `cloudbridge_clipboard`
 - `cloudbridge_files`
+- `cloudbridge_maintenance`
 - private Storage bucket `cloudbridge-files`
 - `cloudbridge_admin_tokens`
 
@@ -107,4 +108,29 @@ Stop:
 
 - Upload file masuk ke bucket private `cloudbridge-files`.
 - File bersifat sementara dengan TTL default 24 jam.
-- Setelah Windows download dan mengirim `ack`, object storage dihapus dari bucket.
+- Setelah Windows download dan mengirim `ack`, file ditandai `downloaded`, tetapi object storage tidak langsung dihapus.
+- Cleanup otomatis berjalan oportunistik dari Edge Function maksimal 1x per 24 jam.
+- File unpinned yang sudah `downloaded` lebih dari 24 jam akan dihapus dari bucket dan database.
+- File unpinned yang expired lebih dari 24 jam juga akan dihapus.
+- File pinned tidak ikut cleanup sampai user melakukan unpin.
+
+## 7. Pin dan History
+
+PWA manager di GitHub Pages memiliki tab:
+
+- `Clipboard History`
+- `Files History`
+
+Kedua tab menyediakan tombol `Pin` / `Unpin`. Clipboard pinned tidak dihapus oleh cleanup 7 hari. File pinned tidak dihapus walaupun sudah downloaded atau expired.
+
+Endpoint terkait:
+
+```text
+GET  /api/clipboard/history
+POST /api/clipboard/{id}/pin
+POST /api/clipboard/{id}/unpin
+GET  /api/files/history
+POST /api/files/{id}/pin
+POST /api/files/{id}/unpin
+POST /api/cleanup
+```

@@ -147,7 +147,10 @@ Response:
     "source": "ios",
     "version": 1,
     "created_at": "2026-07-14T03:00:00+00:00",
-    "device_id": "iphone-alwi"
+    "device_id": "iphone-alwi",
+    "pinned": false,
+    "pinned_at": null,
+    "pinned_by_device_id": null
   }
 }
 ```
@@ -186,6 +189,43 @@ Response without update:
 }
 ```
 
+## `GET /api/clipboard/history`
+
+Returns recent clipboard records for the manager UI.
+
+Query params:
+
+- `limit`: optional, default `50`, max `100`.
+
+Response:
+
+```json
+{
+  "ok": true,
+  "items": [
+    {
+      "id": "uuid",
+      "content": "latest text",
+      "source": "windows",
+      "device_id": "windows-pc",
+      "version": 12,
+      "created_at": "2026-07-14T03:01:00+00:00",
+      "pinned": false,
+      "pinned_at": null,
+      "pinned_by_device_id": null
+    }
+  ]
+}
+```
+
+## `POST /api/clipboard/{id}/pin`
+
+Marks a clipboard record as pinned so automatic cleanup will not delete it.
+
+## `POST /api/clipboard/{id}/unpin`
+
+Removes the pinned status from a clipboard record.
+
 ## `POST /api/files/upload`
 
 Multipart form request:
@@ -208,7 +248,10 @@ Response:
     "device_id": "iphone-alwi",
     "uploaded_at": "2026-07-14T03:02:00+00:00",
     "status": "pending",
-    "downloaded_at": null
+    "downloaded_at": null,
+    "pinned": false,
+    "pinned_at": null,
+    "pinned_by_device_id": null
   }
 }
 ```
@@ -234,7 +277,7 @@ Downloads the file binary.
 
 ## `POST /api/files/{id}/ack`
 
-Marks a file as downloaded. By default the server deletes the stored file payload after ack.
+Marks a file as downloaded. The stored file payload is not deleted immediately; cleanup deletes unpinned downloaded files after the configured grace period.
 
 Response:
 
@@ -250,10 +293,41 @@ Response:
     "device_id": "iphone-alwi",
     "uploaded_at": "2026-07-14T03:02:00+00:00",
     "status": "downloaded",
-    "downloaded_at": "2026-07-14T03:03:00+00:00"
+    "downloaded_at": "2026-07-14T03:03:00+00:00",
+    "pinned": false,
+    "pinned_at": null,
+    "pinned_by_device_id": null
   }
 }
 ```
+
+## `GET /api/files/history`
+
+Returns recent file records for the manager UI. The response does not expose `storage_path`.
+
+Query params:
+
+- `limit`: optional, default `50`, max `100`.
+
+## `POST /api/files/{id}/pin`
+
+Marks a file as pinned so automatic cleanup will not delete the row or storage object.
+
+## `POST /api/files/{id}/unpin`
+
+Removes the pinned status from a file.
+
+## `POST /api/cleanup`
+
+Admin-only manual cleanup endpoint.
+
+Cleanup policy:
+
+- Deletes unpinned clipboard records older than 7 days.
+- Deletes unpinned files that were downloaded more than 24 hours ago.
+- Deletes unpinned files whose expiry is more than 24 hours old.
+- Deletes file objects from `cloudbridge-files` before deleting file rows.
+- Never deletes pinned clipboard or pinned files.
 
 ## Conflict Rules
 
