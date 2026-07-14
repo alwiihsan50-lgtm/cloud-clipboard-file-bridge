@@ -33,7 +33,8 @@
     html { min-height: 100%; background: var(--bg); }
     body {
       margin: 0;
-      min-height: 100dvh;
+      height: 100dvh;
+      overflow: hidden;
       background:
         radial-gradient(circle at 12% -10%, rgb(103 215 199 / .16), transparent 30rem),
         radial-gradient(circle at 94% 8%, rgb(87 128 151 / .18), transparent 26rem),
@@ -53,7 +54,15 @@
       background-size: 42px 42px;
       mask-image: linear-gradient(to bottom, black, transparent 76%);
     }
-    main { width: min(100%, 760px); margin: 0 auto; padding: 18px 14px 34px; }
+    main {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 10px;
+      width: min(100%, 760px);
+      height: 100dvh;
+      margin: 0 auto;
+      padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+    }
     header {
       position: sticky;
       top: 0;
@@ -62,14 +71,14 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 12px 0 14px;
+      padding: 6px 0;
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
     }
     h1 { margin: 0; font-size: 25px; line-height: 1; letter-spacing: 0; }
-    h2 { margin: 0; font-size: 16px; line-height: 1.2; letter-spacing: 0; }
+    h2 { margin: 0; font-size: 15px; line-height: 1.2; letter-spacing: 0; }
     p { margin: 0; color: var(--muted); line-height: 1.45; }
-    label { display: block; margin: 16px 0 8px; color: #dce9ef; font-size: 13px; font-weight: 750; }
+    label { display: block; margin: 10px 0 6px; color: #dce9ef; font-size: 12px; font-weight: 750; }
     input, textarea, button {
       width: 100%;
       box-sizing: border-box;
@@ -80,7 +89,7 @@
       font: inherit;
     }
     input, textarea {
-      padding: 13px;
+      padding: 11px 12px;
       outline: none;
       transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
     }
@@ -89,11 +98,11 @@
       background: #11232b;
       box-shadow: 0 0 0 3px rgb(103 215 199 / .12);
     }
-    textarea { min-height: 148px; resize: vertical; line-height: 1.45; }
+    textarea { min-height: 108px; resize: none; line-height: 1.4; }
     button {
-      min-height: 46px;
-      margin-top: 10px;
-      padding: 12px 14px;
+      min-height: 42px;
+      margin-top: 8px;
+      padding: 10px 13px;
       border: 0;
       background: var(--accent);
       color: var(--accent-ink);
@@ -109,26 +118,20 @@
     button.secondary:hover { background: #233b48; }
     button.tertiary { width: auto; min-height: 36px; margin: 0; padding: 8px 10px; background: transparent; color: var(--muted); border: 1px solid var(--line); font-size: 13px; }
     button.tertiary:hover { color: var(--text); border-color: var(--line-strong); background: rgb(255 255 255 / .035); }
-    button.subtle-danger { width: auto; min-height: 36px; margin: 0; padding: 8px 10px; background: transparent; color: var(--danger); border: 1px solid var(--danger-line); font-size: 13px; }
+    button.subtle-danger { width: auto; min-height: 32px; margin: 0; padding: 7px 9px; background: transparent; color: var(--danger); border: 1px solid var(--danger-line); font-size: 12px; }
     button.inline { width: auto; min-height: 34px; margin: 0; padding: 7px 10px; font-size: 13px; }
     .shell {
       overflow: hidden;
+      min-height: 0;
       border: 1px solid rgb(255 255 255 / .08);
       border-radius: 18px;
       background: linear-gradient(180deg, rgb(18 31 39 / .96), rgb(13 24 31 / .96));
       box-shadow: var(--shadow);
     }
-    .hero {
-      padding: 18px 16px 16px;
-      border-bottom: 1px solid var(--line);
-      background:
-        linear-gradient(135deg, rgb(103 215 199 / .12), transparent 44%),
-        rgb(18 31 39 / .5);
-    }
-    .hero p { margin-top: 6px; font-size: 13px; }
-    .content-pane { padding: 16px; }
-    .pair-card { padding: 16px; border-top: 1px solid var(--line); }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .content-pane { min-height: 0; padding: 12px 12px 10px; overflow: auto; overscroll-behavior: contain; }
+    .sync-pane { display: grid; grid-template-rows: auto auto auto auto auto auto auto; overflow: hidden; }
+    .pair-card { padding: 12px; border-top: 1px solid var(--line); }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .tabs {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -138,7 +141,7 @@
       border-bottom: 1px solid var(--line);
     }
     .tabs button {
-      min-height: 42px;
+      min-height: 40px;
       margin: 0;
       background: transparent;
       color: var(--muted);
@@ -158,10 +161,10 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
     .toolbar .copy { min-width: 0; }
-    .toolbar p { margin-top: 4px; font-size: 13px; }
+    .toolbar p { margin-top: 4px; font-size: 12px; }
     .list { display: grid; gap: 10px; min-height: 80px; }
     .list-item {
       border: 1px solid var(--line);
@@ -204,25 +207,35 @@
       background-size: 220% 100%;
       animation: shimmer 1.2s ease-in-out infinite;
     }
-    .danger-zone { display: flex; justify-content: flex-end; margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--line); }
-    .pill { flex: 0 0 auto; border: 1px solid var(--line-strong); border-radius: 999px; padding: 7px 10px; color: var(--muted); font-size: 13px; background: rgb(17 31 39 / .82); }
+    .danger-zone { display: flex; justify-content: flex-end; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+    .pill { flex: 0 0 auto; border: 1px solid var(--line-strong); border-radius: 999px; padding: 6px 9px; color: var(--muted); font-size: 12px; background: rgb(17 31 39 / .82); }
     .status {
-      margin-top: 12px;
-      padding: 12px 13px;
+      padding: 9px 11px;
       border: 1px solid var(--line);
-      border-radius: 13px;
+      border-radius: 12px;
       background: rgb(15 27 34 / .92);
       color: #c7d7df;
-      min-height: 46px;
+      min-height: 38px;
+      max-height: 54px;
+      overflow: hidden;
       line-height: 1.35;
+      font-size: 13px;
     }
     .hidden { display: none; }
     @keyframes shimmer { to { background-position: -220% 0; } }
     @keyframes itemIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
     @media (max-width: 420px) {
-      main { padding-inline: 10px; }
+      main { padding-inline: 8px; }
       .tabs button { font-size: 11px; padding-inline: 7px; }
-      .content-pane, .hero, .pair-card { padding-inline: 13px; }
+      .content-pane, .pair-card { padding-inline: 10px; }
+    }
+    @media (max-height: 760px) {
+      textarea { min-height: 86px; }
+      button { min-height: 38px; padding-block: 8px; }
+      label { margin-top: 8px; }
+      .tabs button { min-height: 36px; }
+      .content-pane { padding-top: 9px; }
+      .status { min-height: 34px; padding-block: 8px; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
@@ -237,11 +250,6 @@
   </header>
 
   <div class="shell">
-    <section class="hero">
-      <h2>Clipboard and files between iPhone and Windows.</h2>
-      <p>Use this manager to sync, review history, and keep important items pinned.</p>
-    </section>
-
     <section id="pairPanel" class="pair-card hidden">
       <label for="pairCode">Pairing code</label>
       <input id="pairCode" autocomplete="one-time-code" placeholder="Pairing code">
@@ -251,28 +259,22 @@
     <section id="appPanel" class="hidden">
       <nav class="tabs" aria-label="CloudBridge views">
         <button id="syncTab" class="active" aria-selected="true">Sync</button>
-        <button id="clipTab" aria-selected="false">Clipboard History</button>
-        <button id="filesTab" aria-selected="false">Files History</button>
+        <button id="clipTab" aria-selected="false">Clipboard</button>
+        <button id="filesTab" aria-selected="false">Files</button>
       </nav>
 
-      <div id="syncView" class="content-pane">
-        <div class="toolbar">
-          <div class="copy">
-            <h2>Send and pull text</h2>
-            <p>Push text to Windows, or pull the latest clipboard from your PC.</p>
-          </div>
-        </div>
+      <div id="syncView" class="content-pane sync-pane">
         <label for="content">Text</label>
-        <textarea id="content" placeholder="Paste text here, or pull latest text from PC."></textarea>
+        <textarea id="content" placeholder="Paste text here."></textarea>
         <div class="row">
           <button id="pasteBtn" class="secondary">Paste</button>
           <button id="copyBtn" class="secondary">Copy</button>
         </div>
-        <button id="pushBtn">Push to PC</button>
-        <button id="pullBtn" class="secondary">Pull from PC</button>
+        <button id="pushBtn">Push</button>
+        <button id="pullBtn" class="secondary">Pull</button>
         <label for="file">File</label>
         <input id="file" type="file">
-        <button id="fileBtn">Send File to PC</button>
+        <button id="fileBtn">Send File</button>
         <div class="danger-zone">
           <button id="resetBtn" class="subtle-danger">Forget Pairing</button>
         </div>
@@ -281,8 +283,8 @@
       <div id="clipboardView" class="content-pane hidden">
         <div class="toolbar">
           <div class="copy">
-            <h2>Clipboard history</h2>
-            <p id="clipboardSummary">Recent text items stay cached while this app is open.</p>
+            <h2>Clipboard</h2>
+            <p id="clipboardSummary">Cached.</p>
           </div>
           <button id="refreshClipboardBtn" class="tertiary">Refresh</button>
         </div>
@@ -292,8 +294,8 @@
       <div id="filesView" class="content-pane hidden">
         <div class="toolbar">
           <div class="copy">
-            <h2>Files history</h2>
-            <p id="filesSummary">Pinned files stay available until you unpin them.</p>
+            <h2>Files</h2>
+            <p id="filesSummary">Pinned stays.</p>
           </div>
           <button id="refreshFilesBtn" class="tertiary">Refresh</button>
         </div>
@@ -426,9 +428,9 @@ function renderClipboardHistory() {
   if (state.error && !state.items) { list.innerHTML = "<div class='error-box'>Failed to load clipboard history.</div>"; return; }
   const items = state.items || [];
   const pinnedCount = items.filter((item) => item.pinned).length;
-  summary.textContent = items.length ? `${items.length} recent items, ${pinnedCount} pinned.` : "Recent text items stay cached while this app is open.";
+  summary.textContent = items.length ? `${items.length} items, ${pinnedCount} pinned.` : "Cached.";
   if (!items.length) {
-    list.innerHTML = "<div class='empty'>No clipboard history yet. Push or pull text to start building history.</div>";
+    list.innerHTML = "<div class='empty'>No clipboard.</div>";
     return;
   }
   list.innerHTML = "";
@@ -455,9 +457,9 @@ function renderFilesHistory() {
   if (state.error && !state.items) { list.innerHTML = "<div class='error-box'>Failed to load files history.</div>"; return; }
   const items = state.items || [];
   const pinnedCount = items.filter((item) => item.pinned).length;
-  summary.textContent = items.length ? `${items.length} recent files, ${pinnedCount} pinned.` : "Pinned files stay available until you unpin them.";
+  summary.textContent = items.length ? `${items.length} files, ${pinnedCount} pinned.` : "Pinned stays.";
   if (!items.length) {
-    list.innerHTML = "<div class='empty'>No file history yet. Send a file from this iPhone to see it here.</div>";
+    list.innerHTML = "<div class='empty'>No files.</div>";
     return;
   }
   list.innerHTML = "";
@@ -558,7 +560,7 @@ document.getElementById("pushBtn").onclick = async () => {
     const data = await response.json();
     await notifyRealtime("clipboard", data.item || {});
     historyState.clipboard.loadedAt = 0;
-    status("Sent to PC. Press Ctrl+V on Windows.");
+    status("Sent.");
   } catch (err) {
     status("Push failed: " + err.message);
   }
@@ -572,7 +574,7 @@ document.getElementById("pullBtn").onclick = async () => {
     content.value = data.item.content;
     try { await navigator.clipboard.writeText(data.item.content); } catch {}
     historyState.clipboard.loadedAt = 0;
-    status("Pulled from PC.");
+    status("Pulled.");
   } catch (err) {
     status("Pull failed: " + err.message);
   }
@@ -590,7 +592,7 @@ document.getElementById("fileBtn").onclick = async () => {
     const data = await response.json();
     await notifyRealtime("file", data.item || {});
     await loadFilesHistory({ force: true, silent: true });
-    status("File sent. Windows Agent will download it.");
+    status("File sent.");
   } catch (err) {
     status("File send failed: " + err.message);
   }
