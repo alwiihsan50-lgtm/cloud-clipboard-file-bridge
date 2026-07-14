@@ -22,6 +22,15 @@ https://alwiihsan50-lgtm.github.io/cloud-clipboard-file-bridge/app/
 - `server/migrations/` - SQL setup tabel, bucket, dan token admin CloudBridge.
 - `server/` - backend FastAPI lama untuk referensi lokal/legacy, bukan jalur utama.
 
+## Realtime
+
+CloudBridge memakai Supabase Realtime Broadcast untuk sinyal kecil:
+
+- `clipboard`: ada clipboard baru di cloud.
+- `file`: ada file baru di cloud.
+
+Payload Realtime tidak berisi isi clipboard atau binary file. Setelah menerima sinyal, Windows Agent tetap mengambil data lewat API bertoken. Polling cloud tetap ada sebagai fallback lambat setiap 5 menit.
+
 ## Jalur Utama: Supabase Edge Function
 
 Backend utama ada di project Supabase `riwayat smart relay` dengan ref `ajlkfzgpheegmwsnspxw`.
@@ -71,7 +80,7 @@ Folder penerimaan file:
 C:\Users\alwii\Downloads\CloudBridge
 ```
 
-Polling default Windows Agent adalah `5000ms`, supaya lebih aman untuk Supabase Free Tier.
+Windows Agent membuka koneksi Supabase Realtime supaya update dari iPhone terasa instan. Polling cloud fallback default adalah `300000ms` atau 5 menit.
 
 ## Pairing iPhone
 

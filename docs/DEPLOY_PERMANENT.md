@@ -34,6 +34,8 @@ Database dan storage:
 
 RLS tetap aktif tanpa public policy karena semua akses tabel dan storage dilakukan server-side dari Edge Function.
 
+Supabase Realtime Broadcast dipakai untuk sinyal update kecil. Isi clipboard dan file tidak dikirim lewat Realtime; Windows Agent tetap mengambil data lewat API bertoken setelah menerima sinyal.
+
 ## 2. Edge Function API
 
 Source:
@@ -72,6 +74,13 @@ CLOUD_BRIDGE_DEVICE_ID=windows-CUKER
 POLL_INTERVAL_MS=5000
 DOWNLOAD_DIR=C:\Users\alwii\Downloads\CloudBridge
 CLOUD_BRIDGE_APP_URL=https://alwiihsan50-lgtm.github.io/cloud-clipboard-file-bridge/app/
+CLOUD_BRIDGE_REALTIME_ENABLED=true
+CLOUD_BRIDGE_SUPABASE_URL=https://ajlkfzgpheegmwsnspxw.supabase.co
+CLOUD_BRIDGE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_c4VLFI_5vVD2FokNBuX1iw_44NApC27
+CLOUD_BRIDGE_REALTIME_TOPIC=cloudbridge
+CLOUD_BRIDGE_FALLBACK_POLL_INTERVAL_MS=300000
+CLOUD_BRIDGE_LOCAL_CLIPBOARD_INTERVAL_MS=1000
+CLOUD_BRIDGE_HEALTH_INTERVAL_MS=300000
 ```
 
 Jalankan:

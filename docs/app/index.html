@@ -50,6 +50,9 @@
 </main>
 <script>
 const API_BASE = "https://ajlkfzgpheegmwsnspxw.supabase.co/functions/v1/cloudbridge";
+const SUPABASE_BASE = "https://ajlkfzgpheegmwsnspxw.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_c4VLFI_5vVD2FokNBuX1iw_44NApC27";
+const REALTIME_TOPIC = "cloudbridge";
 const deviceId = localStorage.getItem("cloudbridge_device_id") || ("ios-" + Math.random().toString(36).slice(2));
 localStorage.setItem("cloudbridge_device_id", deviceId);
 const params = new URLSearchParams(location.search);
@@ -63,6 +66,28 @@ const content = document.getElementById("content");
 function token() { return localStorage.getItem("cloudbridge_token") || ""; }
 function status(message) { statusBox.textContent = message; }
 function headers(extra = {}) { return { "Authorization": "Bearer " + token(), ...extra }; }
+async function notifyRealtime(kind, item) {
+  try {
+    await fetch(SUPABASE_BASE + "/realtime/v1/api/broadcast", {
+      method: "POST",
+      headers: { "apikey": SUPABASE_PUBLISHABLE_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [{
+          topic: REALTIME_TOPIC,
+          event: "cloudbridge_change",
+          payload: {
+            kind,
+            id: item && item.id,
+            version: item && item.version,
+            source: item && item.source,
+            device_id: item && item.device_id,
+            filename: item && item.filename
+          }
+        }]
+      })
+    });
+  } catch {}
+}
 function setPaired(isPaired) {
   pairState.textContent = isPaired ? "Paired" : "Not paired";
   pairPanel.classList.toggle("hidden", isPaired);
@@ -106,6 +131,8 @@ document.getElementById("pushBtn").onclick = async () => {
       body: JSON.stringify({ content: content.value, source: "ios-pwa", device_id: deviceId })
     });
     if (!response.ok) throw new Error(await response.text());
+    const data = await response.json();
+    await notifyRealtime("clipboard", data.item || {});
     status("Sent to PC. Press Ctrl+V on Windows.");
   } catch (err) {
     status("Push failed: " + err.message);
@@ -134,6 +161,8 @@ document.getElementById("fileBtn").onclick = async () => {
     form.append("device_id", deviceId);
     const response = await fetch(API_BASE + "/api/files/upload", { method: "POST", headers: headers(), body: form });
     if (!response.ok) throw new Error(await response.text());
+    const data = await response.json();
+    await notifyRealtime("file", data.item || {});
     status("File sent. Windows Agent will download it.");
   } catch (err) {
     status("File send failed: " + err.message);

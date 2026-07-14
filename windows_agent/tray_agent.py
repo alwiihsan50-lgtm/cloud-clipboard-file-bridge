@@ -53,42 +53,52 @@ def make_icon() -> Image.Image:
 
 
 def sync_loop() -> None:
-    last_local_hash = ""
-    last_seen_clipboard_id: str | None = None
-    interval = max(agent.POLL_INTERVAL_MS, 500) / 1000
+    state = agent.SyncState()
+    local_interval = max(agent.LOCAL_CLIPBOARD_INTERVAL_MS, 500) / 1000
+    fallback_interval = max(agent.FALLBACK_POLL_INTERVAL_MS, 30000) / 1000
+    health_interval = max(agent.HEALTH_INTERVAL_MS, 30000) / 1000
+    last_fallback_at = 0.0
+    last_health_at = 0.0
+
+    def on_realtime_status(message: str) -> None:
+        if message == "subscribed":
+            set_status(connected=True, last_sync=time.strftime("%H:%M:%S"), last_error="")
+        else:
+            set_status(connected=False, last_error=message[:80])
+
+    def on_realtime_files(files: list[Path]) -> None:
+        if files:
+            set_status(last_file=files[-1].name, last_sync=time.strftime("%H:%M:%S"), connected=True)
+
+    if agent.realtime_available():
+        realtime_thread = threading.Thread(
+            target=agent.run_realtime_listener,
+            args=(state, stop_event, on_realtime_status, on_realtime_files),
+            daemon=True,
+        )
+        realtime_thread.start()
+    else:
+        set_status(connected=False, last_error="Realtime disabled; using fallback polling")
 
     while not stop_event.is_set():
         try:
-            agent.health()
-            local_text = pyperclip.paste()
-            if isinstance(local_text, str) and local_text:
-                local_hash = agent.text_hash(local_text)
-                if local_hash != last_local_hash:
-                    pushed = agent.push_clipboard(local_text)
-                    item_data = (pushed or {}).get("item") or {}
-                    last_seen_clipboard_id = item_data.get("id") or last_seen_clipboard_id
-                    last_local_hash = local_hash
+            now_value = time.monotonic()
+            state.check_local_clipboard()
 
-            latest = agent.pull_clipboard(last_seen_clipboard_id)
-            if latest and latest.get("has_update") and latest.get("item"):
-                item_data = latest["item"]
-                content = item_data["content"]
-                pyperclip.copy(content)
-                last_seen_clipboard_id = item_data["id"]
-                last_local_hash = agent.text_hash(content)
-                agent.notify("CloudBridge clipboard updated", "Text from cloud is ready to paste.")
+            if now_value - last_health_at >= health_interval:
+                agent.health()
+                last_health_at = now_value
 
-            before = set(p.name for p in agent.DOWNLOAD_DIR.glob("*")) if agent.DOWNLOAD_DIR.exists() else set()
-            agent.poll_files()
-            after = set(p.name for p in agent.DOWNLOAD_DIR.glob("*")) if agent.DOWNLOAD_DIR.exists() else set()
-            new_files = sorted(after - before)
-            if new_files:
-                set_status(last_file=new_files[-1])
+            if now_value - last_fallback_at >= fallback_interval:
+                files = state.sync_remote()
+                if files:
+                    set_status(last_file=files[-1].name)
+                last_fallback_at = now_value
 
             set_status(connected=True, last_sync=time.strftime("%H:%M:%S"), last_error="")
         except Exception as exc:
             set_status(connected=False, last_error=str(exc)[:80])
-        stop_event.wait(interval)
+        stop_event.wait(local_interval)
 
 
 def open_downloads() -> None:

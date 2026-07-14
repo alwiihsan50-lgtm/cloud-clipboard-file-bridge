@@ -12,6 +12,44 @@ Protected endpoints require either the admin token or a paired device token:
 Authorization: Bearer <CLOUD_BRIDGE_TOKEN>
 ```
 
+## Realtime Broadcast
+
+Realtime channel:
+
+```text
+cloudbridge
+```
+
+Event:
+
+```text
+cloudbridge_change
+```
+
+Payload examples:
+
+```json
+{
+  "kind": "clipboard",
+  "id": "uuid",
+  "version": 14,
+  "source": "ios-pwa",
+  "device_id": "ios-device-id"
+}
+```
+
+```json
+{
+  "kind": "file",
+  "id": "uuid",
+  "filename": "photo.jpg",
+  "source": "ios-pwa",
+  "device_id": "ios-device-id"
+}
+```
+
+Realtime payloads are signals only. Clipboard content and file payloads are fetched through the protected API.
+
 ## `GET /health`
 
 Public health check.
