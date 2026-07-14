@@ -21,6 +21,7 @@
     button { margin-top: 10px; padding: 13px 14px; border: 0; background: #5eead4; color: #042f2e; font-weight: 850; }
     button.secondary { background: #284156; color: #f8fafc; }
     button.danger { background: #fca5a5; color: #450a0a; }
+    button.subtle-danger { width: auto; padding: 9px 11px; background: transparent; color: #fca5a5; border: 1px solid #7f2d37; font-size: 13px; }
     button.inline { width: auto; margin-top: 0; padding: 8px 10px; font-size: 13px; }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
@@ -32,6 +33,7 @@
     .preview { white-space: pre-wrap; word-break: break-word; color: #f8fafc; line-height: 1.35; }
     .meta { color: #9fb4c6; font-size: 12px; margin-top: 7px; }
     .empty { color: #9fb4c6; padding: 12px 0; }
+    .danger-zone { margin-top: 28px; padding-top: 14px; border-top: 1px solid #2d4052; text-align: right; }
     .pill { border: 1px solid #375066; border-radius: 999px; padding: 7px 10px; color: #a8c7dd; font-size: 13px; }
     .status { margin-top: 16px; padding: 12px; border-radius: 8px; background: #172a3a; color: #cbd5e1; min-height: 24px; }
     .hidden { display: none; }
@@ -60,7 +62,9 @@
     <label for="file">File</label>
     <input id="file" type="file">
     <button id="fileBtn">Send File to PC</button>
-    <button id="resetBtn" class="danger">Forget Pairing</button>
+    <div class="danger-zone">
+      <button id="resetBtn" class="subtle-danger">Forget Pairing</button>
+    </div>
     </div>
     <div id="clipboardView" class="hidden">
       <button id="refreshClipboardBtn" class="secondary">Refresh Clipboard History</button>
@@ -288,6 +292,11 @@ document.getElementById("fileBtn").onclick = async () => {
   }
 };
 document.getElementById("resetBtn").onclick = () => {
+  const confirmed = confirm("Forget pairing on this iPhone? You will need to pair this device again from Windows before using CloudBridge.");
+  if (!confirmed) {
+    status("Forget pairing cancelled.");
+    return;
+  }
   localStorage.removeItem("cloudbridge_token");
   setPaired(false);
   status("Pairing removed from this iPhone.");
