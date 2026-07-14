@@ -14,8 +14,9 @@ Response:
 
 ```json
 {
-  "ok": "true",
-  "service": "Cloud Clipboard & File Bridge"
+  "ok": true,
+  "service": "CloudBridge",
+  "mode": "supabase-edge"
 }
 ```
 
@@ -38,9 +39,15 @@ Response:
 {
   "ok": true,
   "code": "short-lived-secret",
-  "pairing_url": "https://app.onrender.com/app?code=short-lived-secret",
+  "pairing_url": "https://ajlkfzgpheegmwsnspxw.supabase.co/functions/v1/cloudbridge/app?code=short-lived-secret",
   "expires_at": "2026-07-14T03:10:00+00:00"
 }
+```
+
+The Windows tray app uses `code` to build the iPhone app URL:
+
+```text
+https://alwiihsan50-lgtm.github.io/cloud-clipboard-file-bridge/app/?code=short-lived-secret
 ```
 
 ## `POST /api/pairing/claim`

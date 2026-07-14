@@ -15,6 +15,10 @@ from pystray import MenuItem as item
 import agent
 
 
+APP_URL = os.getenv(
+    "CLOUD_BRIDGE_APP_URL",
+    "https://alwiihsan50-lgtm.github.io/cloud-clipboard-file-bridge/app/",
+).rstrip("/")
 stop_event = threading.Event()
 status_lock = threading.Lock()
 status = {
@@ -100,12 +104,10 @@ def copy_cloud_url() -> None:
 def create_pairing_link() -> None:
     try:
         data = agent.create_pairing("Windows PC")
-        pairing_url = (data or {}).get("pairing_url")
         code = (data or {}).get("code")
-        if not pairing_url:
-            raise RuntimeError("Server did not return a pairing URL")
-        if pairing_url.startswith("/"):
-            pairing_url = f"{agent.BASE_URL}{pairing_url}"
+        if not code:
+            raise RuntimeError("Server did not return a pairing code")
+        pairing_url = f"{APP_URL}/?code={code}"
         pyperclip.copy(pairing_url)
         qr_path = Path(os.getenv("TEMP", str(Path.home()))) / "cloudbridge-pairing-qr.png"
         qrcode.make(pairing_url).save(qr_path)

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101820">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icon.svg">
+  <title>CloudBridge</title>
+  <style>
+    :root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; background: #101820; color: #f8fafc; }
+    main { max-width: 720px; margin: 0 auto; padding: 22px 16px 42px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    h1 { margin: 0; font-size: 24px; letter-spacing: 0; }
+    section { border-top: 1px solid #2d4052; padding-top: 18px; margin-top: 18px; }
+    label { display: block; margin: 14px 0 8px; font-weight: 700; }
+    input, textarea, button { width: 100%; box-sizing: border-box; border: 1px solid #36536a; border-radius: 8px; background: #152332; color: #f8fafc; font: inherit; }
+    input, textarea { padding: 12px; }
+    textarea { min-height: 150px; resize: vertical; }
+    button { margin-top: 10px; padding: 13px 14px; border: 0; background: #5eead4; color: #042f2e; font-weight: 850; }
+    button.secondary { background: #284156; color: #f8fafc; }
+    button.danger { background: #fca5a5; color: #450a0a; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .pill { border: 1px solid #375066; border-radius: 999px; padding: 7px 10px; color: #a8c7dd; font-size: 13px; }
+    .status { margin-top: 16px; padding: 12px; border-radius: 8px; background: #172a3a; color: #cbd5e1; min-height: 24px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+<main>
+  <header><h1>CloudBridge</h1><div id="pairState" class="pill">Checking</div></header>
+  <section id="pairPanel" class="hidden">
+    <label for="pairCode">Pairing code</label>
+    <input id="pairCode" autocomplete="one-time-code" placeholder="Pairing code">
+    <button id="pairBtn">Pair iPhone</button>
+  </section>
+  <section id="appPanel" class="hidden">
+    <label for="content">Text</label>
+    <textarea id="content" placeholder="Paste text here, or pull latest text from PC."></textarea>
+    <div class="row"><button id="pasteBtn" class="secondary">Paste</button><button id="copyBtn" class="secondary">Copy</button></div>
+    <button id="pushBtn">Push to PC</button>
+    <button id="pullBtn" class="secondary">Pull from PC</button>
+    <label for="file">File</label>
+    <input id="file" type="file">
+    <button id="fileBtn">Send File to PC</button>
+    <button id="resetBtn" class="danger">Forget Pairing</button>
+  </section>
+  <div id="status" class="status">Ready.</div>
+</main>
+<script>
+const API_BASE = "https://ajlkfzgpheegmwsnspxw.supabase.co/functions/v1/cloudbridge";
+const deviceId = localStorage.getItem("cloudbridge_device_id") || ("ios-" + Math.random().toString(36).slice(2));
+localStorage.setItem("cloudbridge_device_id", deviceId);
+const params = new URLSearchParams(location.search);
+const pairCodeInput = document.getElementById("pairCode");
+if (params.get("code")) pairCodeInput.value = params.get("code");
+const statusBox = document.getElementById("status");
+const pairState = document.getElementById("pairState");
+const pairPanel = document.getElementById("pairPanel");
+const appPanel = document.getElementById("appPanel");
+const content = document.getElementById("content");
+function token() { return localStorage.getItem("cloudbridge_token") || ""; }
+function status(message) { statusBox.textContent = message; }
+function headers(extra = {}) { return { "Authorization": "Bearer " + token(), ...extra }; }
+function setPaired(isPaired) {
+  pairState.textContent = isPaired ? "Paired" : "Not paired";
+  pairPanel.classList.toggle("hidden", isPaired);
+  appPanel.classList.toggle("hidden", !isPaired);
+}
+async function checkPairing() {
+  if (!token()) { setPaired(false); return; }
+  const response = await fetch(API_BASE + "/api/me", { headers: headers() });
+  setPaired(response.ok);
+  if (!response.ok) localStorage.removeItem("cloudbridge_token");
+}
+document.getElementById("pairBtn").onclick = async () => {
+  try {
+    const response = await fetch(API_BASE + "/api/pairing/claim", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: pairCodeInput.value.trim(), device_id: deviceId, label: "iPhone" })
+    });
+    if (!response.ok) throw new Error(await response.text());
+    const data = await response.json();
+    localStorage.setItem("cloudbridge_token", data.token);
+    setPaired(true);
+    status("iPhone paired.");
+  } catch (err) {
+    status("Pairing failed: " + err.message);
+  }
+};
+document.getElementById("pasteBtn").onclick = async () => {
+  try { content.value = await navigator.clipboard.readText(); status("Pasted from iPhone clipboard."); }
+  catch { status("Paste blocked by iOS. Paste manually into the text box."); }
+};
+document.getElementById("copyBtn").onclick = async () => {
+  try { await navigator.clipboard.writeText(content.value); status("Copied to iPhone clipboard."); }
+  catch { status("Copy blocked by iOS. Select text manually."); }
+};
+document.getElementById("pushBtn").onclick = async () => {
+  try {
+    const response = await fetch(API_BASE + "/api/clipboard/push", {
+      method: "POST",
+      headers: headers({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ content: content.value, source: "ios-pwa", device_id: deviceId })
+    });
+    if (!response.ok) throw new Error(await response.text());
+    status("Sent to PC. Press Ctrl+V on Windows.");
+  } catch (err) {
+    status("Push failed: " + err.message);
+  }
+};
+document.getElementById("pullBtn").onclick = async () => {
+  try {
+    const response = await fetch(API_BASE + "/api/clipboard/latest?device_id=" + encodeURIComponent(deviceId), { headers: headers() });
+    if (!response.ok) throw new Error(await response.text());
+    const data = await response.json();
+    if (!data.has_update) { status("No new clipboard from PC."); return; }
+    content.value = data.item.content;
+    try { await navigator.clipboard.writeText(data.item.content); } catch {}
+    status("Pulled from PC.");
+  } catch (err) {
+    status("Pull failed: " + err.message);
+  }
+};
+document.getElementById("fileBtn").onclick = async () => {
+  try {
+    const input = document.getElementById("file");
+    if (!input.files.length) throw new Error("Choose a file first.");
+    const form = new FormData();
+    form.append("file", input.files[0]);
+    form.append("source", "ios-pwa");
+    form.append("device_id", deviceId);
+    const response = await fetch(API_BASE + "/api/files/upload", { method: "POST", headers: headers(), body: form });
+    if (!response.ok) throw new Error(await response.text());
+    status("File sent. Windows Agent will download it.");
+  } catch (err) {
+    status("File send failed: " + err.message);
+  }
+};
+document.getElementById("resetBtn").onclick = () => {
+  localStorage.removeItem("cloudbridge_token");
+  setPaired(false);
+  status("Pairing removed from this iPhone.");
+};
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
+checkPairing().catch(() => setPaired(false));
+</script>
+</body>
+</html>

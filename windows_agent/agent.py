@@ -19,12 +19,12 @@ except Exception:  # pragma: no cover
     Notification = None
 
 
-load_dotenv()
+load_dotenv(override=True)
 
 BASE_URL = os.getenv("CLOUD_BRIDGE_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 TOKEN = os.getenv("CLOUD_BRIDGE_TOKEN", "change-me")
 DEVICE_ID = os.getenv("CLOUD_BRIDGE_DEVICE_ID") or f"windows-{socket.gethostname()}"
-POLL_INTERVAL_MS = int(os.getenv("POLL_INTERVAL_MS", "1500"))
+POLL_INTERVAL_MS = int(os.getenv("POLL_INTERVAL_MS", "5000"))
 DOWNLOAD_DIR = Path(os.getenv("DOWNLOAD_DIR") or (Path.home() / "Downloads" / "CloudBridge"))
 
 HEADERS = {"Authorization": f"Bearer {TOKEN}"}

@@ -4,7 +4,7 @@ V1 memakai iOS Shortcuts karena iOS tidak mengizinkan utility clipboard berjalan
 
 Ganti nilai berikut di semua Shortcut:
 
-- `BASE_URL`: URL server, contoh `https://cloud-clipboard-file-bridge.onrender.com`
+- `BASE_URL`: URL Supabase app, `https://ajlkfzgpheegmwsnspxw.supabase.co/functions/v1/cloudbridge`
 - `TOKEN`: token rahasia yang sama dengan `CLOUD_BRIDGE_TOKEN`
 - `DEVICE_ID`: contoh `iphone-alwi`
 
@@ -90,4 +90,3 @@ Untuk trigger cepat:
 4. `Back Tap`.
 5. Pilih `Double Tap` atau `Triple Tap`.
 6. Pilih Shortcut `Push Clipboard to PC` atau `Pull Clipboard from PC`.
-
