@@ -120,6 +120,7 @@
     button.tertiary:hover { color: var(--text); border-color: var(--line-strong); background: rgb(255 255 255 / .035); }
     button.subtle-danger { width: auto; min-height: 32px; margin: 0; padding: 7px 9px; background: transparent; color: var(--danger); border: 1px solid var(--danger-line); font-size: 12px; }
     button.inline { width: auto; min-height: 34px; margin: 0; padding: 7px 10px; font-size: 13px; }
+    .actions { display: flex; flex-direction: column; gap: 7px; align-items: flex-end; }
     .shell {
       display: grid;
       grid-template-rows: minmax(0, 1fr);
@@ -430,6 +431,20 @@ async function pinFile(id, pinned) {
   await loadFilesHistory({ force: true, silent: true });
   status(pinned ? "File unpinned." : "File pinned.");
 }
+async function downloadFile(id, filename) {
+  const response = await fetch(API_BASE + "/api/files/" + encodeURIComponent(id) + "/download", { headers: headers() });
+  if (!response.ok) throw new Error(await response.text());
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename || "cloudbridge-file";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+  status("Download started.");
+}
 function renderClipboardHistory() {
   const list = document.getElementById("clipboardList");
   const summary = document.getElementById("clipboardSummary");
@@ -476,16 +491,19 @@ function renderFilesHistory() {
   items.forEach((item) => {
     const row = document.createElement("article");
     row.className = "list-item";
-    row.innerHTML = "<div class='list-head'><div><div class='preview'></div><div class='meta'></div></div><button class='inline'></button></div>";
+    row.innerHTML = "<div class='list-head'><div><div class='preview'></div><div class='meta'></div></div><div class='actions'><button class='inline download-button'></button><button class='inline pin-button'></button></div></div>";
     row.querySelector(".preview").textContent = item.filename;
     row.querySelector(".meta").innerHTML =
       (item.pinned ? chip("Pinned", "pinned") : "") +
       chip(item.status || "unknown") +
       chip(fmtSize(item.size)) +
       chip(fmtTime(item.uploaded_at));
-    const button = row.querySelector("button");
-    button.textContent = item.pinned ? "Unpin" : "Pin";
-    button.onclick = () => pinFile(item.id, item.pinned);
+    const downloadButton = row.querySelector(".download-button");
+    downloadButton.textContent = "Download";
+    downloadButton.onclick = () => downloadFile(item.id, item.filename).catch((err) => status("Download failed: " + err.message));
+    const pinButton = row.querySelector(".pin-button");
+    pinButton.textContent = item.pinned ? "Unpin" : "Pin";
+    pinButton.onclick = () => pinFile(item.id, item.pinned);
     list.appendChild(row);
   });
 }

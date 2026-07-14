@@ -231,7 +231,7 @@ Removes the pinned status from a clipboard record.
 Multipart form request:
 
 - `file`: uploaded file.
-- `source`: `ios`.
+- `source`: `ios-pwa` or `windows-tray`.
 - `device_id`: sender device id.
 
 Response:
@@ -273,7 +273,7 @@ Response:
 
 ## `GET /api/files/{id}/download`
 
-Downloads the file binary.
+Downloads the file binary. The iPhone PWA uses this endpoint for files uploaded from Windows.
 
 ## `POST /api/files/{id}/ack`
 

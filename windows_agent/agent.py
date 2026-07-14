@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import mimetypes
 import os
 import re
 import socket
@@ -131,6 +132,38 @@ def pull_clipboard(since_id: str | None) -> dict[str, Any] | None:
     if since_id:
         params["since_id"] = since_id
     return request_json("GET", "/api/clipboard/latest", params=params)
+
+
+def upload_file(path: str | Path) -> dict[str, Any] | None:
+    file_path = Path(path)
+    if not file_path.is_file():
+        raise FileNotFoundError(str(file_path))
+
+    mime_type = mimetypes.guess_type(file_path.name)[0] or "application/octet-stream"
+    with file_path.open("rb") as file_handle:
+        response = requests.post(
+            f"{BASE_URL}/api/files/upload",
+            headers=HEADERS,
+            files={"file": (file_path.name, file_handle, mime_type)},
+            data={"source": "windows-tray", "device_id": DEVICE_ID},
+            timeout=300,
+        )
+    if response.status_code == 401:
+        raise RuntimeError("Server rejected CLOUD_BRIDGE_TOKEN")
+    response.raise_for_status()
+    data = response.json()
+    item_data = data.get("item") or {}
+    if item_data:
+        broadcast_realtime(
+            "file",
+            {
+                "id": item_data.get("id"),
+                "filename": item_data.get("filename"),
+                "source": item_data.get("source"),
+                "device_id": item_data.get("device_id"),
+            },
+        )
+    return data
 
 
 def sanitize_filename(filename: str) -> str:

@@ -1,6 +1,6 @@
 # Cloud Clipboard & File Bridge
 
-CloudBridge menyinkronkan clipboard teks dan file antara iPhone dan Windows 11 lewat internet. Versi utama sekarang berjalan penuh di Supabase, tanpa Render, tunnel, atau URL sementara.
+CloudBridge menyinkronkan clipboard teks dan file dua arah antara iPhone dan Windows 11 lewat internet. Versi utama sekarang berjalan penuh di Supabase, tanpa Render, tunnel, atau URL sementara.
 
 URL API stabil:
 
@@ -88,6 +88,8 @@ D:\Cloud Bridge
 ```
 
 Windows Agent membuka koneksi Supabase Realtime supaya update dari iPhone terasa instan. Polling cloud fallback default adalah `300000ms` atau 5 menit.
+
+Untuk mengirim file dari Windows ke iPhone, gunakan menu tray `Send file to iPhone`, lalu buka tab `Files` di PWA iPhone dan tekan `Download`.
 
 ## Pairing iPhone
 

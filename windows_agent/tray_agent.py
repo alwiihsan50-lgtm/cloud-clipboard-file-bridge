@@ -5,6 +5,7 @@ import subprocess
 import threading
 import time
 from pathlib import Path
+from tkinter import Tk, filedialog
 
 import pyperclip
 import pystray
@@ -115,6 +116,34 @@ def open_manager() -> None:
     os.startfile(APP_URL)
 
 
+def choose_file() -> str:
+    root = Tk()
+    root.withdraw()
+    root.attributes("-topmost", True)
+    try:
+        return filedialog.askopenfilename(title="Send file to iPhone")
+    finally:
+        root.destroy()
+
+
+def send_file_to_iphone() -> None:
+    def worker() -> None:
+        try:
+            selected = choose_file()
+            if not selected:
+                return
+            data = agent.upload_file(selected)
+            item_data = (data or {}).get("item") or {}
+            filename = item_data.get("filename") or Path(selected).name
+            set_status(last_file=filename, last_sync=time.strftime("%H:%M:%S"), connected=True)
+            agent.notify("CloudBridge file sent", f"{filename} is ready on iPhone.")
+        except Exception as exc:
+            set_status(connected=False, last_error=str(exc)[:80])
+            agent.notify("CloudBridge file send failed", str(exc))
+
+    threading.Thread(target=worker, daemon=True).start()
+
+
 def create_pairing_link() -> None:
     try:
         data = agent.create_pairing("Windows PC")
@@ -155,6 +184,7 @@ def main() -> None:
         item(lambda _: status_title(), None, enabled=False),
         item("Show pairing link", create_pairing_link),
         item("Open CloudBridge Manager", open_manager),
+        item("Send file to iPhone", send_file_to_iphone),
         item("Copy cloud URL", copy_cloud_url),
         item("Open downloads folder", open_downloads),
         item("Open logs", open_logs),

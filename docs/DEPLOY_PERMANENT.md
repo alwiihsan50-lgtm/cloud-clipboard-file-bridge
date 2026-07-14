@@ -103,6 +103,7 @@ Stop:
 3. Buka pairing link di iPhone.
 4. Tap `Pair iPhone`.
 5. Di Safari, tap Share lalu `Add to Home Screen`.
+6. Untuk file dari Windows, buka tab `Files` lalu tap `Download`.
 
 ## 6. Storage Behavior
 
@@ -113,6 +114,7 @@ Stop:
 - File unpinned yang sudah `downloaded` lebih dari 24 jam akan dihapus dari bucket dan database.
 - File unpinned yang expired lebih dari 24 jam juga akan dihapus.
 - File pinned tidak ikut cleanup sampai user melakukan unpin.
+- File bisa dikirim dua arah: iPhone upload dari PWA, Windows upload dari tray menu `Send file to iPhone`.
 
 ## 7. Pin dan History
 
