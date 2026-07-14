@@ -84,7 +84,7 @@ Stop agent:
 Folder penerimaan file:
 
 ```text
-C:\Users\alwii\Downloads\CloudBridge
+D:\Cloud Bridge
 ```
 
 Windows Agent membuka koneksi Supabase Realtime supaya update dari iPhone terasa instan. Polling cloud fallback default adalah `300000ms` atau 5 menit.
