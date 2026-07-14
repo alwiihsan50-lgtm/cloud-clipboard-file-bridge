@@ -63,7 +63,7 @@ Endpoint publik hanya `/health` dan `/api/pairing/claim`. Endpoint lain memakai:
 Authorization: Bearer <token>
 ```
 
-Token admin disimpan sebagai hash SHA-256 di tabel `cloudbridge_admin_tokens`. Token device iPhone disimpan sebagai hash SHA-256 di tabel `cloudbridge_devices`.
+Token admin disimpan sebagai hash SHA-256 di tabel `cloudbridge_admin_tokens` dan hanya dipakai Windows Agent/tray untuk membuat pairing code. Token device iPhone dan PC Web Manager disimpan sebagai hash SHA-256 di tabel `cloudbridge_devices`.
 
 ## Menjalankan di Windows Ini
 
@@ -90,6 +90,8 @@ D:\Cloud Bridge
 Windows Agent membuka koneksi Supabase Realtime supaya update dari iPhone terasa instan. Polling cloud fallback default adalah `300000ms` atau 5 menit.
 
 Untuk mengirim file dari Windows ke iPhone, gunakan menu tray `Send file to iPhone`, lalu buka tab `Files` di PWA iPhone dan tekan `Download`.
+
+Menu tray `Open CloudBridge Manager` membuat pairing code singkat dan otomatis mendaftarkan browser PC sebagai device `windows-web`. Admin token tidak dikirim ke browser.
 
 ## Pairing iPhone
 

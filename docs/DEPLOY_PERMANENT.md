@@ -54,6 +54,8 @@ verify_jwt = false
 
 `verify_jwt` dinonaktifkan karena function memakai bearer token internal: admin token dan device token hasil pairing.
 
+Admin token hanya dipakai oleh Windows Agent/tray untuk membuat pairing code. Browser iPhone dan browser PC memakai device token dari tabel `cloudbridge_devices`.
+
 ## 3. GitHub Pages App
 
 Source:
@@ -104,6 +106,8 @@ Stop:
 4. Tap `Pair iPhone`.
 5. Di Safari, tap Share lalu `Add to Home Screen`.
 6. Untuk file dari Windows, buka tab `Files` lalu tap `Download`.
+
+Untuk PC Web Manager, pilih `Open CloudBridge Manager` dari tray. Tray akan membuat pairing code singkat dan PWA otomatis claim sebagai device `windows-web`, tanpa mengirim admin token ke browser.
 
 ## 6. Storage Behavior
 

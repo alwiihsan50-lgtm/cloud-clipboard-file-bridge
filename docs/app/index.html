@@ -324,13 +324,11 @@ const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_c4VLFI_5vVD2FokNBuX1iw_44NApC27
 const REALTIME_TOPIC = "cloudbridge";
 const HISTORY_STALE_MS = 60000;
 const params = new URLSearchParams(location.search);
-const hashParams = new URLSearchParams(location.hash.startsWith("#") ? location.hash.slice(1) : "");
-if (hashParams.get("manager_token")) {
-  localStorage.setItem("cloudbridge_token", hashParams.get("manager_token"));
-  if (hashParams.get("device_id")) localStorage.setItem("cloudbridge_device_id", hashParams.get("device_id"));
-  history.replaceState(null, "", location.pathname + location.search);
+const requestedDeviceId = params.get("device_id");
+if (params.get("auto_claim") === "1" && requestedDeviceId) {
+  localStorage.setItem("cloudbridge_device_id", requestedDeviceId);
 }
-const deviceId = localStorage.getItem("cloudbridge_device_id") || ("ios-" + Math.random().toString(36).slice(2));
+const deviceId = localStorage.getItem("cloudbridge_device_id") || requestedDeviceId || ("ios-" + Math.random().toString(36).slice(2));
 localStorage.setItem("cloudbridge_device_id", deviceId);
 const pairCodeInput = document.getElementById("pairCode");
 if (params.get("code")) pairCodeInput.value = params.get("code");
@@ -426,6 +424,32 @@ async function apiJson(path, options = {}) {
   const response = await fetch(API_BASE + path, { ...options, headers: headers(options.headers || {}) });
   if (!response.ok) throw new Error(await response.text());
   return response.json();
+}
+async function claimPairing(code, label = "iPhone", platform = "ios") {
+  const response = await fetch(API_BASE + "/api/pairing/claim", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code, device_id: deviceId, label, platform })
+  });
+  if (!response.ok) throw new Error(await response.text());
+  const data = await response.json();
+  localStorage.setItem("cloudbridge_token", data.token);
+  setPaired(true);
+  return data;
+}
+async function autoClaimIfRequested() {
+  if (params.get("auto_claim") !== "1" || !params.get("code")) return false;
+  status("Pairing...");
+  try {
+    await claimPairing(params.get("code"), params.get("label") || "Windows Manager", params.get("platform") || "windows-web");
+    history.replaceState(null, "", location.pathname);
+    status("Paired.");
+  } catch (err) {
+    localStorage.removeItem("cloudbridge_token");
+    setPaired(false);
+    status("Pairing failed: " + err.message);
+  }
+  return true;
 }
 async function pinClipboard(id, pinned) {
   await apiJson("/api/clipboard/" + encodeURIComponent(id) + "/" + (pinned ? "unpin" : "pin"), { method: "POST" });
@@ -561,15 +585,7 @@ async function loadFilesHistory(options = {}) {
 }
 document.getElementById("pairBtn").onclick = async () => {
   try {
-    const response = await fetch(API_BASE + "/api/pairing/claim", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: pairCodeInput.value.trim(), device_id: deviceId, label: "iPhone" })
-    });
-    if (!response.ok) throw new Error(await response.text());
-    const data = await response.json();
-    localStorage.setItem("cloudbridge_token", data.token);
-    setPaired(true);
+    await claimPairing(pairCodeInput.value.trim(), "iPhone", "ios");
     status("iPhone paired.");
   } catch (err) {
     status("Pairing failed: " + err.message);
@@ -647,7 +663,9 @@ tabButtons.files.onclick = () => showView("files");
 document.getElementById("refreshClipboardBtn").onclick = () => loadClipboardHistory({ force: true });
 document.getElementById("refreshFilesBtn").onclick = () => loadFilesHistory({ force: true });
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
-checkPairing().catch(() => setPaired(false));
+autoClaimIfRequested().then((claimed) => {
+  if (!claimed) return checkPairing();
+}).catch(() => setPaired(false));
 </script>
 </body>
 </html>

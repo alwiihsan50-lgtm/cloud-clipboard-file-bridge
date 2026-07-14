@@ -104,7 +104,8 @@ Request:
 {
   "code": "short-lived-secret",
   "device_id": "ios-device-id",
-  "label": "iPhone"
+  "label": "iPhone",
+  "platform": "ios"
 }
 ```
 
@@ -117,6 +118,8 @@ Response:
   "token": "device-token"
 }
 ```
+
+`platform` is optional. The iPhone PWA sends `ios`; the Windows tray auto-manager flow sends `windows-web`. The returned token is only shown once to the client; the database stores its SHA-256 hash in `cloudbridge_devices`.
 
 ## `GET /api/me`
 

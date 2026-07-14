@@ -114,11 +114,22 @@ def copy_cloud_url() -> None:
 
 
 def open_manager() -> None:
-    manager_url = (
-        f"{APP_URL}/#manager_token={quote(agent.TOKEN, safe='')}"
-        f"&device_id={quote(agent.DEVICE_ID, safe='')}"
-    )
-    os.startfile(manager_url)
+    try:
+        data = agent.create_pairing("Windows Manager")
+        code = (data or {}).get("code")
+        if not code:
+            raise RuntimeError("Server did not return a pairing code")
+        manager_device_id = f"windows-web-{agent.DEVICE_ID}"
+        manager_url = (
+            f"{APP_URL}/?code={quote(code, safe='')}"
+            f"&auto_claim=1"
+            f"&device_id={quote(manager_device_id, safe='')}"
+            f"&label={quote('Windows Manager', safe='')}"
+            f"&platform=windows-web"
+        )
+        os.startfile(manager_url)
+    except Exception as exc:
+        agent.notify("CloudBridge manager failed", str(exc))
 
 
 def choose_file() -> str:

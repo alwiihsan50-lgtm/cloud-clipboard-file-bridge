@@ -249,8 +249,9 @@ Deno.serve(async (req: Request) => {
       if (!deviceId) return json({ detail: "device_id is required" }, 422);
       const token = randomToken(32);
       const tokenHash = await sha256(token);
+      const platform = String(body.platform ?? "ios").slice(0, 40) || "ios";
       const { error: deviceError } = await supabase.from("cloudbridge_devices").upsert(
-        { device_id: deviceId, label: String(body.label ?? "iPhone"), platform: "ios", token_hash: tokenHash, revoked: false },
+        { device_id: deviceId, label: String(body.label ?? "iPhone"), platform, token_hash: tokenHash, revoked: false },
         { onConflict: "device_id" },
       );
       if (deviceError) return json({ detail: deviceError.message }, 500);
