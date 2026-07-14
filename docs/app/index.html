@@ -3,78 +3,305 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101820">
+  <meta name="theme-color" content="#0d171d">
+  <meta name="description" content="CloudBridge manager for clipboard and file transfer between iPhone and Windows.">
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" href="./icon.svg">
   <title>CloudBridge</title>
   <style>
-    :root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    body { margin: 0; background: #101820; color: #f8fafc; }
-    main { max-width: 720px; margin: 0 auto; padding: 22px 16px 42px; }
-    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
-    h1 { margin: 0; font-size: 24px; letter-spacing: 0; }
-    section { border-top: 1px solid #2d4052; padding-top: 18px; margin-top: 18px; }
-    label { display: block; margin: 14px 0 8px; font-weight: 700; }
-    input, textarea, button { width: 100%; box-sizing: border-box; border: 1px solid #36536a; border-radius: 8px; background: #152332; color: #f8fafc; font: inherit; }
-    input, textarea { padding: 12px; }
-    textarea { min-height: 150px; resize: vertical; }
-    button { margin-top: 10px; padding: 13px 14px; border: 0; background: #5eead4; color: #042f2e; font-weight: 850; }
-    button.secondary { background: #284156; color: #f8fafc; }
-    button.danger { background: #fca5a5; color: #450a0a; }
-    button.subtle-danger { width: auto; padding: 9px 11px; background: transparent; color: #fca5a5; border: 1px solid #7f2d37; font-size: 13px; }
-    button.inline { width: auto; margin-top: 0; padding: 8px 10px; font-size: 13px; }
+    :root {
+      color-scheme: dark;
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      --bg: #0d171d;
+      --panel: #121f27;
+      --panel-2: #172832;
+      --panel-3: #1c303c;
+      --line: #2b4350;
+      --line-strong: #3a5968;
+      --text: #f3f8fb;
+      --muted: #9fb5c1;
+      --faint: #6f8795;
+      --accent: #67d7c7;
+      --accent-strong: #8be5d9;
+      --accent-ink: #062b28;
+      --danger: #f0a0a8;
+      --danger-line: #7b323f;
+      --shadow: 0 24px 70px rgb(2 9 12 / .42);
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--bg); }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      background:
+        radial-gradient(circle at 12% -10%, rgb(103 215 199 / .16), transparent 30rem),
+        radial-gradient(circle at 94% 8%, rgb(87 128 151 / .18), transparent 26rem),
+        linear-gradient(180deg, #0d171d 0%, #0a1217 100%);
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .08;
+      background-image:
+        linear-gradient(rgb(255 255 255 / .26) 1px, transparent 1px),
+        linear-gradient(90deg, rgb(255 255 255 / .18) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, black, transparent 76%);
+    }
+    main { width: min(100%, 760px); margin: 0 auto; padding: 18px 14px 34px; }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0 14px;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+    h1 { margin: 0; font-size: 25px; line-height: 1; letter-spacing: 0; }
+    h2 { margin: 0; font-size: 16px; line-height: 1.2; letter-spacing: 0; }
+    p { margin: 0; color: var(--muted); line-height: 1.45; }
+    label { display: block; margin: 16px 0 8px; color: #dce9ef; font-size: 13px; font-weight: 750; }
+    input, textarea, button {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #101d25;
+      color: var(--text);
+      font: inherit;
+    }
+    input, textarea {
+      padding: 13px;
+      outline: none;
+      transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+    input:focus, textarea:focus {
+      border-color: rgb(103 215 199 / .72);
+      background: #11232b;
+      box-shadow: 0 0 0 3px rgb(103 215 199 / .12);
+    }
+    textarea { min-height: 148px; resize: vertical; line-height: 1.45; }
+    button {
+      min-height: 46px;
+      margin-top: 10px;
+      padding: 12px 14px;
+      border: 0;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 850;
+      cursor: pointer;
+      transition: transform .16s ease, background .16s ease, border-color .16s ease, color .16s ease, opacity .16s ease;
+      touch-action: manipulation;
+    }
+    button:hover { background: var(--accent-strong); }
+    button:active { transform: translateY(1px) scale(.99); }
+    button:focus-visible { outline: 3px solid rgb(103 215 199 / .38); outline-offset: 2px; }
+    button.secondary { background: var(--panel-3); color: var(--text); border: 1px solid var(--line-strong); }
+    button.secondary:hover { background: #233b48; }
+    button.tertiary { width: auto; min-height: 36px; margin: 0; padding: 8px 10px; background: transparent; color: var(--muted); border: 1px solid var(--line); font-size: 13px; }
+    button.tertiary:hover { color: var(--text); border-color: var(--line-strong); background: rgb(255 255 255 / .035); }
+    button.subtle-danger { width: auto; min-height: 36px; margin: 0; padding: 8px 10px; background: transparent; color: var(--danger); border: 1px solid var(--danger-line); font-size: 13px; }
+    button.inline { width: auto; min-height: 34px; margin: 0; padding: 7px 10px; font-size: 13px; }
+    .shell {
+      overflow: hidden;
+      border: 1px solid rgb(255 255 255 / .08);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgb(18 31 39 / .96), rgb(13 24 31 / .96));
+      box-shadow: var(--shadow);
+    }
+    .hero {
+      padding: 18px 16px 16px;
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(135deg, rgb(103 215 199 / .12), transparent 44%),
+        rgb(18 31 39 / .5);
+    }
+    .hero p { margin-top: 6px; font-size: 13px; }
+    .content-pane { padding: 16px; }
+    .pair-card { padding: 16px; border-top: 1px solid var(--line); }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
-    .tabs button { min-height: 44px; background: #284156; color: #f8fafc; font-size: 12px; line-height: 1.15; }
-    .tabs button.active { background: #5eead4; color: #042f2e; }
-    .list { display: grid; gap: 10px; margin-top: 12px; }
-    .list-item { border: 1px solid #2d4052; border-radius: 8px; padding: 12px; background: #132230; }
-    .list-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-    .preview { white-space: pre-wrap; word-break: break-word; color: #f8fafc; line-height: 1.35; }
-    .meta { color: #9fb4c6; font-size: 12px; margin-top: 7px; }
-    .empty { color: #9fb4c6; padding: 12px 0; }
-    .danger-zone { margin-top: 28px; padding-top: 14px; border-top: 1px solid #2d4052; text-align: right; }
-    .pill { border: 1px solid #375066; border-radius: 999px; padding: 7px 10px; color: #a8c7dd; font-size: 13px; }
-    .status { margin-top: 16px; padding: 12px; border-radius: 8px; background: #172a3a; color: #cbd5e1; min-height: 24px; }
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 6px;
+      background: #0c171d;
+      border-bottom: 1px solid var(--line);
+    }
+    .tabs button {
+      min-height: 42px;
+      margin: 0;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid transparent;
+      font-size: 12px;
+      line-height: 1.15;
+      border-radius: 9px;
+    }
+    .tabs button.active {
+      background: var(--panel-3);
+      color: var(--text);
+      border-color: var(--line-strong);
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / .05);
+    }
+    .toolbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .toolbar .copy { min-width: 0; }
+    .toolbar p { margin-top: 4px; font-size: 13px; }
+    .list { display: grid; gap: 10px; min-height: 80px; }
+    .list-item {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: rgb(17 31 39 / .86);
+      animation: itemIn .18s ease both;
+    }
+    .list-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: flex-start; gap: 10px; }
+    .preview { white-space: pre-wrap; word-break: break-word; color: var(--text); line-height: 1.38; }
+    .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; color: var(--muted); font-size: 12px; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 3px 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgb(255 255 255 / .025);
+    }
+    .chip.pinned { color: var(--accent-strong); border-color: rgb(103 215 199 / .28); background: rgb(103 215 199 / .07); }
+    .empty, .error-box {
+      padding: 18px 14px;
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: rgb(255 255 255 / .025);
+      line-height: 1.45;
+    }
+    .error-box { color: #ffc8cf; border-color: var(--danger-line); background: rgb(240 160 168 / .05); }
+    .skeleton { display: grid; gap: 10px; }
+    .skeleton-row {
+      min-height: 72px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(90deg, transparent, rgb(255 255 255 / .045), transparent),
+        rgb(18 33 42 / .8);
+      background-size: 220% 100%;
+      animation: shimmer 1.2s ease-in-out infinite;
+    }
+    .danger-zone { display: flex; justify-content: flex-end; margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--line); }
+    .pill { flex: 0 0 auto; border: 1px solid var(--line-strong); border-radius: 999px; padding: 7px 10px; color: var(--muted); font-size: 13px; background: rgb(17 31 39 / .82); }
+    .status {
+      margin-top: 12px;
+      padding: 12px 13px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: rgb(15 27 34 / .92);
+      color: #c7d7df;
+      min-height: 46px;
+      line-height: 1.35;
+    }
     .hidden { display: none; }
+    @keyframes shimmer { to { background-position: -220% 0; } }
+    @keyframes itemIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 420px) {
+      main { padding-inline: 10px; }
+      .tabs button { font-size: 11px; padding-inline: 7px; }
+      .content-pane, .hero, .pair-card { padding-inline: 13px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+    }
   </style>
 </head>
 <body>
 <main>
-  <header><h1>CloudBridge</h1><div id="pairState" class="pill">Checking</div></header>
-  <section id="pairPanel" class="hidden">
-    <label for="pairCode">Pairing code</label>
-    <input id="pairCode" autocomplete="one-time-code" placeholder="Pairing code">
-    <button id="pairBtn">Pair iPhone</button>
-  </section>
-  <section id="appPanel" class="hidden">
-    <div class="tabs">
-      <button id="syncTab" class="active">Sync</button>
-      <button id="clipTab">Clipboard History</button>
-      <button id="filesTab">Files History</button>
-    </div>
-    <div id="syncView">
-    <label for="content">Text</label>
-    <textarea id="content" placeholder="Paste text here, or pull latest text from PC."></textarea>
-    <div class="row"><button id="pasteBtn" class="secondary">Paste</button><button id="copyBtn" class="secondary">Copy</button></div>
-    <button id="pushBtn">Push to PC</button>
-    <button id="pullBtn" class="secondary">Pull from PC</button>
-    <label for="file">File</label>
-    <input id="file" type="file">
-    <button id="fileBtn">Send File to PC</button>
-    <div class="danger-zone">
-      <button id="resetBtn" class="subtle-danger">Forget Pairing</button>
-    </div>
-    </div>
-    <div id="clipboardView" class="hidden">
-      <button id="refreshClipboardBtn" class="secondary">Refresh Clipboard History</button>
-      <div id="clipboardList" class="list"></div>
-    </div>
-    <div id="filesView" class="hidden">
-      <button id="refreshFilesBtn" class="secondary">Refresh Files History</button>
-      <div id="filesList" class="list"></div>
-    </div>
-  </section>
+  <header>
+    <h1>CloudBridge</h1>
+    <div id="pairState" class="pill">Checking</div>
+  </header>
+
+  <div class="shell">
+    <section class="hero">
+      <h2>Clipboard and files between iPhone and Windows.</h2>
+      <p>Use this manager to sync, review history, and keep important items pinned.</p>
+    </section>
+
+    <section id="pairPanel" class="pair-card hidden">
+      <label for="pairCode">Pairing code</label>
+      <input id="pairCode" autocomplete="one-time-code" placeholder="Pairing code">
+      <button id="pairBtn">Pair iPhone</button>
+    </section>
+
+    <section id="appPanel" class="hidden">
+      <nav class="tabs" aria-label="CloudBridge views">
+        <button id="syncTab" class="active" aria-selected="true">Sync</button>
+        <button id="clipTab" aria-selected="false">Clipboard History</button>
+        <button id="filesTab" aria-selected="false">Files History</button>
+      </nav>
+
+      <div id="syncView" class="content-pane">
+        <div class="toolbar">
+          <div class="copy">
+            <h2>Send and pull text</h2>
+            <p>Push text to Windows, or pull the latest clipboard from your PC.</p>
+          </div>
+        </div>
+        <label for="content">Text</label>
+        <textarea id="content" placeholder="Paste text here, or pull latest text from PC."></textarea>
+        <div class="row">
+          <button id="pasteBtn" class="secondary">Paste</button>
+          <button id="copyBtn" class="secondary">Copy</button>
+        </div>
+        <button id="pushBtn">Push to PC</button>
+        <button id="pullBtn" class="secondary">Pull from PC</button>
+        <label for="file">File</label>
+        <input id="file" type="file">
+        <button id="fileBtn">Send File to PC</button>
+        <div class="danger-zone">
+          <button id="resetBtn" class="subtle-danger">Forget Pairing</button>
+        </div>
+      </div>
+
+      <div id="clipboardView" class="content-pane hidden">
+        <div class="toolbar">
+          <div class="copy">
+            <h2>Clipboard history</h2>
+            <p id="clipboardSummary">Recent text items stay cached while this app is open.</p>
+          </div>
+          <button id="refreshClipboardBtn" class="tertiary">Refresh</button>
+        </div>
+        <div id="clipboardList" class="list"></div>
+      </div>
+
+      <div id="filesView" class="content-pane hidden">
+        <div class="toolbar">
+          <div class="copy">
+            <h2>Files history</h2>
+            <p id="filesSummary">Pinned files stay available until you unpin them.</p>
+          </div>
+          <button id="refreshFilesBtn" class="tertiary">Refresh</button>
+        </div>
+        <div id="filesList" class="list"></div>
+      </div>
+    </section>
+  </div>
+
   <div id="status" class="status">Ready.</div>
 </main>
 <script>
@@ -82,6 +309,7 @@ const API_BASE = "https://ajlkfzgpheegmwsnspxw.supabase.co/functions/v1/cloudbri
 const SUPABASE_BASE = "https://ajlkfzgpheegmwsnspxw.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_c4VLFI_5vVD2FokNBuX1iw_44NApC27";
 const REALTIME_TOPIC = "cloudbridge";
+const HISTORY_STALE_MS = 60000;
 const deviceId = localStorage.getItem("cloudbridge_device_id") || ("ios-" + Math.random().toString(36).slice(2));
 localStorage.setItem("cloudbridge_device_id", deviceId);
 const params = new URLSearchParams(location.search);
@@ -102,16 +330,25 @@ const tabButtons = {
   clipboard: document.getElementById("clipTab"),
   files: document.getElementById("filesTab")
 };
+const historyState = {
+  clipboard: { items: null, loading: false, loadedAt: 0, error: "" },
+  files: { items: null, loading: false, loadedAt: 0, error: "" }
+};
 function token() { return localStorage.getItem("cloudbridge_token") || ""; }
 function status(message) { statusBox.textContent = message; }
 function headers(extra = {}) { return { "Authorization": "Bearer " + token(), ...extra }; }
+function isStale(name) { return Date.now() - historyState[name].loadedAt > HISTORY_STALE_MS; }
+function setTabA11y(activeName) {
+  Object.keys(tabButtons).forEach((key) => tabButtons[key].setAttribute("aria-selected", key === activeName ? "true" : "false"));
+}
 function showView(name) {
   Object.keys(views).forEach((key) => {
     views[key].classList.toggle("hidden", key !== name);
     tabButtons[key].classList.toggle("active", key === name);
   });
-  if (name === "clipboard") loadClipboardHistory();
-  if (name === "files") loadFilesHistory();
+  setTabA11y(name);
+  if (name === "clipboard") ensureHistory("clipboard");
+  if (name === "files") ensureHistory("files");
 }
 function fmtTime(value) {
   if (!value) return "";
@@ -126,6 +363,12 @@ function fmtSize(bytes) {
   if (size >= 1024 * 1024) return (size / 1024 / 1024).toFixed(1) + " MB";
   if (size >= 1024) return (size / 1024).toFixed(1) + " KB";
   return size + " B";
+}
+function skeletonRows() {
+  return "<div class='skeleton'><div class='skeleton-row'></div><div class='skeleton-row'></div><div class='skeleton-row'></div></div>";
+}
+function chip(text, className = "") {
+  return "<span class='chip " + className + "'>" + text + "</span>";
 }
 async function notifyRealtime(kind, item) {
   try {
@@ -167,58 +410,117 @@ async function apiJson(path, options = {}) {
 }
 async function pinClipboard(id, pinned) {
   await apiJson("/api/clipboard/" + encodeURIComponent(id) + "/" + (pinned ? "unpin" : "pin"), { method: "POST" });
-  await loadClipboardHistory();
+  await loadClipboardHistory({ force: true, silent: true });
+  status(pinned ? "Clipboard unpinned." : "Clipboard pinned.");
 }
 async function pinFile(id, pinned) {
   await apiJson("/api/files/" + encodeURIComponent(id) + "/" + (pinned ? "unpin" : "pin"), { method: "POST" });
-  await loadFilesHistory();
+  await loadFilesHistory({ force: true, silent: true });
+  status(pinned ? "File unpinned." : "File pinned.");
 }
-async function loadClipboardHistory() {
+function renderClipboardHistory() {
   const list = document.getElementById("clipboardList");
-  list.innerHTML = "<div class='empty'>Loading...</div>";
+  const summary = document.getElementById("clipboardSummary");
+  const state = historyState.clipboard;
+  if (state.loading && !state.items) { list.innerHTML = skeletonRows(); return; }
+  if (state.error && !state.items) { list.innerHTML = "<div class='error-box'>Failed to load clipboard history.</div>"; return; }
+  const items = state.items || [];
+  const pinnedCount = items.filter((item) => item.pinned).length;
+  summary.textContent = items.length ? `${items.length} recent items, ${pinnedCount} pinned.` : "Recent text items stay cached while this app is open.";
+  if (!items.length) {
+    list.innerHTML = "<div class='empty'>No clipboard history yet. Push or pull text to start building history.</div>";
+    return;
+  }
+  list.innerHTML = "";
+  items.forEach((item) => {
+    const row = document.createElement("article");
+    row.className = "list-item";
+    row.innerHTML = "<div class='list-head'><div><div class='preview'></div><div class='meta'></div></div><button class='inline'></button></div>";
+    row.querySelector(".preview").textContent = shortText(item.content);
+    row.querySelector(".meta").innerHTML =
+      (item.pinned ? chip("Pinned", "pinned") : "") +
+      chip(item.source || "unknown") +
+      chip(fmtTime(item.created_at));
+    const button = row.querySelector("button");
+    button.textContent = item.pinned ? "Unpin" : "Pin";
+    button.onclick = () => pinClipboard(item.id, item.pinned);
+    list.appendChild(row);
+  });
+}
+function renderFilesHistory() {
+  const list = document.getElementById("filesList");
+  const summary = document.getElementById("filesSummary");
+  const state = historyState.files;
+  if (state.loading && !state.items) { list.innerHTML = skeletonRows(); return; }
+  if (state.error && !state.items) { list.innerHTML = "<div class='error-box'>Failed to load files history.</div>"; return; }
+  const items = state.items || [];
+  const pinnedCount = items.filter((item) => item.pinned).length;
+  summary.textContent = items.length ? `${items.length} recent files, ${pinnedCount} pinned.` : "Pinned files stay available until you unpin them.";
+  if (!items.length) {
+    list.innerHTML = "<div class='empty'>No file history yet. Send a file from this iPhone to see it here.</div>";
+    return;
+  }
+  list.innerHTML = "";
+  items.forEach((item) => {
+    const row = document.createElement("article");
+    row.className = "list-item";
+    row.innerHTML = "<div class='list-head'><div><div class='preview'></div><div class='meta'></div></div><button class='inline'></button></div>";
+    row.querySelector(".preview").textContent = item.filename;
+    row.querySelector(".meta").innerHTML =
+      (item.pinned ? chip("Pinned", "pinned") : "") +
+      chip(item.status || "unknown") +
+      chip(fmtSize(item.size)) +
+      chip(fmtTime(item.uploaded_at));
+    const button = row.querySelector("button");
+    button.textContent = item.pinned ? "Unpin" : "Pin";
+    button.onclick = () => pinFile(item.id, item.pinned);
+    list.appendChild(row);
+  });
+}
+async function ensureHistory(name) {
+  const state = historyState[name];
+  if (state.items && !isStale(name)) {
+    if (name === "clipboard") renderClipboardHistory();
+    if (name === "files") renderFilesHistory();
+    return;
+  }
+  if (name === "clipboard") await loadClipboardHistory({ silent: Boolean(state.items) });
+  if (name === "files") await loadFilesHistory({ silent: Boolean(state.items) });
+}
+async function loadClipboardHistory(options = {}) {
+  const state = historyState.clipboard;
+  if (state.loading && !options.force) return;
+  state.loading = true;
+  state.error = "";
+  if (!options.silent) renderClipboardHistory();
   try {
     const data = await apiJson("/api/clipboard/history?limit=50");
-    const items = data.items || [];
-    if (!items.length) { list.innerHTML = "<div class='empty'>No clipboard history.</div>"; return; }
-    list.innerHTML = "";
-    items.forEach((item) => {
-      const row = document.createElement("div");
-      row.className = "list-item";
-      row.innerHTML = "<div class='list-head'><div><div class='preview'></div><div class='meta'></div></div><button class='inline'></button></div>";
-      row.querySelector(".preview").textContent = shortText(item.content);
-      row.querySelector(".meta").textContent = (item.pinned ? "Pinned - " : "") + item.source + " - " + fmtTime(item.created_at);
-      const button = row.querySelector("button");
-      button.textContent = item.pinned ? "Unpin" : "Pin";
-      button.onclick = () => pinClipboard(item.id, item.pinned);
-      list.appendChild(row);
-    });
+    state.items = data.items || [];
+    state.loadedAt = Date.now();
   } catch (err) {
-    list.innerHTML = "<div class='empty'>Failed to load clipboard history.</div>";
+    state.error = err.message;
     status("Clipboard history failed: " + err.message);
+  } finally {
+    state.loading = false;
+    renderClipboardHistory();
   }
 }
-async function loadFilesHistory() {
-  const list = document.getElementById("filesList");
-  list.innerHTML = "<div class='empty'>Loading...</div>";
+async function loadFilesHistory(options = {}) {
+  const state = historyState.files;
+  if (state.loading && !options.force) return;
+  state.loading = true;
+  state.error = "";
+  if (!options.silent) renderFilesHistory();
   try {
     const data = await apiJson("/api/files/history?limit=50");
-    const items = data.items || [];
-    if (!items.length) { list.innerHTML = "<div class='empty'>No file history.</div>"; return; }
-    list.innerHTML = "";
-    items.forEach((item) => {
-      const row = document.createElement("div");
-      row.className = "list-item";
-      row.innerHTML = "<div class='list-head'><div><div class='preview'></div><div class='meta'></div></div><button class='inline'></button></div>";
-      row.querySelector(".preview").textContent = item.filename;
-      row.querySelector(".meta").textContent = (item.pinned ? "Pinned - " : "") + item.status + " - " + fmtSize(item.size) + " - " + fmtTime(item.uploaded_at);
-      const button = row.querySelector("button");
-      button.textContent = item.pinned ? "Unpin" : "Pin";
-      button.onclick = () => pinFile(item.id, item.pinned);
-      list.appendChild(row);
-    });
+    state.items = data.items || [];
+    state.loadedAt = Date.now();
   } catch (err) {
-    list.innerHTML = "<div class='empty'>Failed to load files history.</div>";
+    state.error = err.message;
     status("Files history failed: " + err.message);
+  } finally {
+    state.loading = false;
+    renderFilesHistory();
   }
 }
 document.getElementById("pairBtn").onclick = async () => {
@@ -255,6 +557,7 @@ document.getElementById("pushBtn").onclick = async () => {
     if (!response.ok) throw new Error(await response.text());
     const data = await response.json();
     await notifyRealtime("clipboard", data.item || {});
+    historyState.clipboard.loadedAt = 0;
     status("Sent to PC. Press Ctrl+V on Windows.");
   } catch (err) {
     status("Push failed: " + err.message);
@@ -268,6 +571,7 @@ document.getElementById("pullBtn").onclick = async () => {
     if (!data.has_update) { status("No new clipboard from PC."); return; }
     content.value = data.item.content;
     try { await navigator.clipboard.writeText(data.item.content); } catch {}
+    historyState.clipboard.loadedAt = 0;
     status("Pulled from PC.");
   } catch (err) {
     status("Pull failed: " + err.message);
@@ -285,7 +589,7 @@ document.getElementById("fileBtn").onclick = async () => {
     if (!response.ok) throw new Error(await response.text());
     const data = await response.json();
     await notifyRealtime("file", data.item || {});
-    await loadFilesHistory();
+    await loadFilesHistory({ force: true, silent: true });
     status("File sent. Windows Agent will download it.");
   } catch (err) {
     status("File send failed: " + err.message);
@@ -304,8 +608,8 @@ document.getElementById("resetBtn").onclick = () => {
 tabButtons.sync.onclick = () => showView("sync");
 tabButtons.clipboard.onclick = () => showView("clipboard");
 tabButtons.files.onclick = () => showView("files");
-document.getElementById("refreshClipboardBtn").onclick = loadClipboardHistory;
-document.getElementById("refreshFilesBtn").onclick = loadFilesHistory;
+document.getElementById("refreshClipboardBtn").onclick = () => loadClipboardHistory({ force: true });
+document.getElementById("refreshFilesBtn").onclick = () => loadFilesHistory({ force: true });
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
 checkPairing().catch(() => setPaired(false));
 </script>
