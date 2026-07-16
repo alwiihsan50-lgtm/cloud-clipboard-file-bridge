@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0c171d">
-  <meta name="description" content="CloudBridge clipboard and file manager for iPhone and Windows.">
+  <meta name="description" content="CloudBridge clipboard sync and temporary file transfer for iPhone and Windows.">
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" href="./icon.svg">
   <title>CloudBridge</title>
@@ -175,58 +175,16 @@
     .clip-preview { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.4; font-size: 13px; }
     .item-foot { margin-top: 8px; display: flex; align-items: center; gap: 6px; }
     .meta { min-width: 0; margin-right: auto; color: var(--faint); font-size: 10px; font-variant-numeric: tabular-nums; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-    .file-pane { height: 100%; min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; }
-    .file-toolbar { flex-wrap: wrap; }
-    .breadcrumb { min-width: 120px; flex: 1 1 260px; display: flex; align-items: center; gap: 3px; overflow: hidden; }
-    .crumb { min-height: 31px; padding: 5px 7px; color: var(--muted); background: transparent; border: 0; white-space: nowrap; font-size: 12px; }
-    .crumb:hover { color: var(--text); background: var(--panel-2); }
-    .crumb:last-child { color: var(--text); overflow: hidden; text-overflow: ellipsis; }
-    .crumb-sep { color: var(--faint); }
-    .search-wrap { flex: 1 1 210px; position: relative; }
-    .search-wrap input { height: 36px; padding-left: 35px; }
-    .search-wrap svg { position: absolute; left: 11px; top: 10px; width: 16px; height: 16px; stroke: var(--faint); fill: none; stroke-width: 1.8; }
-    .sort-select { width: auto; height: 36px; min-width: 108px; padding: 6px 30px 6px 9px; font-size: 12px; }
-    .storage-strip { min-height: 30px; display: grid; grid-template-columns: auto minmax(80px, 180px) auto; align-items: center; gap: 8px; padding: 5px 12px; border-bottom: 1px solid var(--line); color: var(--faint); font-size: 10px; }
-    .storage-track { height: 4px; overflow: hidden; border-radius: 4px; background: var(--panel-3); }
-    .storage-fill { width: 0; height: 100%; background: var(--accent); transition: width 240ms ease; }
-    .storage-fill.warn { background: var(--warning); }
-    .storage-fill.danger { background: var(--danger); }
-    .file-workspace { min-height: 0; display: grid; grid-template-columns: 220px minmax(0, 1fr); }
-    .folder-sidebar { min-height: 0; overflow: auto; padding: 7px; border-right: 1px solid var(--line); }
-    .tree-item {
-      width: 100%; min-height: 33px; display: flex; align-items: center; gap: 7px;
-      padding: 6px 8px; color: var(--muted); background: transparent; border: 0; text-align: left; font-size: 12px; font-weight: 600;
-    }
-    .tree-item:hover { color: var(--text); background: var(--panel-2); }
-    .tree-item.active { color: var(--accent-strong); background: rgb(103 215 199 / .08); }
-    .tree-item svg { width: 16px; height: 16px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.7; }
-    .tree-indent { margin-left: 15px; }
-    .browser-area { min-height: 0; overflow: auto; }
-    .browser-head {
-      position: sticky; top: 0; z-index: 2; min-height: 35px; display: grid;
-      grid-template-columns: minmax(0, 1fr) 90px 105px 124px; align-items: center;
-      padding: 0 10px; color: var(--faint); background: rgb(12 25 32 / .96); border-bottom: 1px solid var(--line); font-size: 10px;
-    }
-    .browser-row {
-      min-height: 51px; display: grid; grid-template-columns: minmax(0, 1fr) 90px 105px 124px;
-      align-items: center; gap: 0; padding: 6px 10px; border-bottom: 1px solid rgb(40 67 79 / .58); transition: background 150ms ease;
-    }
-    .browser-row:hover { background: rgb(103 215 199 / .045); }
-    .browser-row.selected { background: rgb(103 215 199 / .09); }
-    .file-name { min-width: 0; display: flex; align-items: center; gap: 9px; }
-    .file-name input { width: 16px; height: 16px; accent-color: var(--accent); flex: 0 0 auto; }
-    .file-name .type-icon { width: 20px; height: 20px; flex: 0 0 auto; fill: none; stroke: var(--accent); stroke-width: 1.6; }
-    .file-name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; }
-    .folder-open { color: var(--text); background: transparent; border: 0; padding: 0; min-height: 0; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .folder-open:hover { color: var(--accent-strong); background: transparent; }
-    .row-meta { color: var(--faint); font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .row-actions { display: flex; justify-content: flex-end; gap: 4px; }
-    .row-actions .icon-button { width: 29px; height: 29px; min-height: 29px; }
-    .selection-bar {
-      min-height: 48px; display: flex; align-items: center; gap: 7px; padding: 7px 10px;
-      border-top: 1px solid var(--line); background: var(--panel); overflow-x: auto;
-    }
-    .selection-bar strong { margin-right: auto; white-space: nowrap; font-size: 12px; }
+    .file-pane { height: 100%; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+    .file-entry { padding: 11px 12px; border-top: 1px solid rgb(40 67 79 / .68); }
+    .file-entry:first-child { border-top-color: transparent; }
+    .file-main { min-width: 0; display: flex; align-items: center; gap: 9px; }
+    .file-main > svg { width: 21px; height: 21px; flex: 0 0 auto; fill: none; stroke: var(--accent); stroke-width: 1.6; }
+    .file-details { min-width: 0; flex: 1; }
+    .file-title { overflow: hidden; color: var(--text); font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+    .file-meta { margin-top: 3px; color: var(--faint); font-size: 10px; font-variant-numeric: tabular-nums; }
+    .file-actions { display: flex; gap: 4px; }
+    .file-actions .icon-button { width: 31px; height: 31px; min-height: 31px; }
     .load-more { display: flex; justify-content: center; padding: 10px; }
     .load-more button { min-width: 132px; }
     .empty-state { min-height: 180px; display: grid; place-content: center; gap: 6px; padding: 24px; color: var(--muted); text-align: center; }
@@ -267,30 +225,13 @@
       .clipboard-column + .clipboard-column { border-left: 0; }
       .clipboard-board[data-mobile-view="recent"] .pinned-column,
       .clipboard-board[data-mobile-view="pinned"] .recent-column { display: none; }
+      .file-board[data-mobile-view="temporary"] .pinned-column,
+      .file-board[data-mobile-view="pinned"] .temporary-column { display: none; }
       .mobile-only { display: inline-grid; }
-      .file-pane { grid-template-rows: auto auto minmax(0, 1fr) auto; }
-      .file-toolbar { gap: 6px; padding: 7px 8px; }
-      .breadcrumb { order: 1; flex-basis: calc(100% - 88px); }
-      .file-toolbar > .icon-button { order: 1; }
-      .search-wrap { order: 2; flex-basis: calc(100% - 116px); }
-      .sort-select { order: 2; width: 110px; }
-      .storage-strip { padding-inline: 9px; grid-template-columns: auto minmax(60px, 1fr) auto; }
-      .file-workspace { display: block; }
-      .folder-sidebar { display: none; }
-      .browser-area { height: 100%; }
-      .browser-head { display: none; }
-      .browser-row { min-height: 60px; grid-template-columns: minmax(0, 1fr) auto; padding: 7px 8px; }
-      .browser-row > .row-meta { display: none; }
-      .row-actions { gap: 3px; }
-      .row-actions .icon-button { width: 31px; height: 31px; }
-      .selection-bar { padding-inline: 8px; }
-      .selection-bar strong { position: sticky; left: 0; padding-right: 5px; background: var(--panel); }
       .quick-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 420px) {
       .sync-pane { grid-template-columns: 1fr 1fr; }
-      .file-name-text { font-size: 12px; }
-      .row-actions .optional-action { display: none; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
@@ -356,49 +297,30 @@
       </section>
 
       <section id="filesView" class="content-pane file-pane hidden">
-        <div class="pane-toolbar file-toolbar">
-          <nav id="breadcrumb" class="breadcrumb" aria-label="Folder path"></nav>
-          <div class="search-wrap">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
-            <input id="fileSearch" type="search" placeholder="Search files" aria-label="Search files">
+        <div class="pane-toolbar">
+          <div class="heading"><h2>Files</h2><p id="filesSummary">Loading</p></div>
+          <div id="filesMobileSwitch" class="segmented mobile-only" aria-label="Files view">
+            <button data-file-view="pinned" class="active">Pinned</button>
+            <button data-file-view="temporary">Temporary</button>
           </div>
-          <select id="fileSort" class="sort-select" aria-label="Sort files">
-            <option value="newest">Newest</option><option value="oldest">Oldest</option><option value="name">Name</option><option value="size">Size</option>
-          </select>
-          <button id="newFolderBtn" class="icon-button" title="New folder" aria-label="New folder"></button>
-          <button id="uploadFolderBtn" class="icon-button" title="Upload" aria-label="Upload file"></button>
-          <input id="managerFileInput" type="file" class="sr-only">
           <button id="refreshFilesBtn" class="icon-button" title="Refresh" aria-label="Refresh files"></button>
         </div>
-        <div class="storage-strip">
-          <span>Storage</span><div class="storage-track"><div id="storageFill" class="storage-fill"></div></div><span id="storageText">--</span>
-        </div>
-        <div class="file-workspace">
-          <aside id="folderTree" class="folder-sidebar" aria-label="Folders"></aside>
-          <section id="browserArea" class="browser-area">
-            <div class="browser-head"><span>Name</span><span>Size</span><span>Status</span><span></span></div>
-            <div id="browserList"></div>
+        <div id="filesBoard" class="clipboard-board file-board" data-mobile-view="pinned">
+          <section class="clipboard-column pinned-column">
+            <div class="section-title"><h3>Pinned</h3><span id="pinnedFilesCount">0</span></div>
+            <div id="pinnedFilesList" class="scroll-list"></div>
+          </section>
+          <section class="clipboard-column temporary-column">
+            <div class="section-title"><h3>Temporary</h3><span id="temporaryFilesCount">0</span></div>
+            <div id="temporaryFilesList" class="scroll-list"></div>
           </section>
         </div>
-        <div id="selectionBar" class="selection-bar hidden"></div>
       </section>
     </section>
   </div>
 
   <div id="status" class="status" role="status">Ready.</div>
 </main>
-
-<dialog id="editorDialog">
-  <form id="editorForm">
-    <div class="dialog-body">
-      <h2 id="editorTitle">Edit</h2>
-      <label id="editorLabel" for="editorInput">Name</label>
-      <input id="editorInput" autocomplete="off">
-      <select id="editorSelect" class="hidden"></select>
-    </div>
-    <div class="dialog-actions"><button type="button" id="editorCancel" class="secondary">Cancel</button><button type="submit" id="editorSave">Save</button></div>
-  </form>
-</dialog>
 
 <dialog id="confirmDialog">
   <div class="dialog-body"><h2 id="confirmTitle">Confirm</h2><p id="confirmCopy" class="dialog-copy"></p></div>
@@ -420,7 +342,7 @@
       <label for="quickPullUrl">Pull URL</label>
       <div class="secret-row"><input id="quickPullUrl" readonly><button class="secondary" data-copy="quickPullUrl">Copy</button></div>
       <div class="quick-grid">
-        <section class="quick-card"><h3>CloudBridge Push</h3><ol><li>Get Clipboard</li><li>Get Contents of URL: POST, request body <strong>File</strong> = Clipboard</li><li>Add header <strong>Authorization</strong> using the value above</li><li>Show Notification: Sent</li><li>Add to Home Screen</li></ol></section>
+        <section class="quick-card"><h3>CloudBridge Push</h3><ol><li>Get Clipboard</li><li>Get Text from Clipboard</li><li>Get Contents of URL: POST, request body <strong>File</strong> = Text</li><li>Add header <strong>Authorization</strong> using the value above</li><li>Add to Home Screen</li></ol></section>
         <section class="quick-card"><h3>CloudBridge Pull</h3><ol><li>Get Contents of URL: GET</li><li>Add header <strong>Authorization</strong> using the value above</li><li>If result has value, Copy to Clipboard</li><li>Show Notification: Pulled</li><li>Add to Home Screen</li></ol></section>
       </div>
     </div>
@@ -434,22 +356,12 @@ const SUPABASE_BASE = "https://ajlkfzgpheegmwsnspxw.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_c4VLFI_5vVD2FokNBuX1iw_44NApC27";
 const REALTIME_TOPIC = "cloudbridge";
 const CACHE_MS = 60000;
-const WORKSPACE_CACHE_KEY = "cloudbridge_workspace_cache_v1";
-const WORKSPACE_CACHE_MAX_MS = 86400000;
 const icons = {
   refresh: '<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>',
-  folderPlus: '<svg viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z"></path><path d="M12 11v5M9.5 13.5h5"></path></svg>',
-  upload: '<svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"></path><path d="M4 15v5h16v-5"></path></svg>',
-  folder: '<svg class="type-icon" viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z"></path></svg>',
-  inbox: '<svg viewBox="0 0 24 24"><path d="M4 5h16l2 9v5H2v-5z"></path><path d="M2 14h6l2 3h4l2-3h6"></path></svg>',
-  trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7"></path></svg>',
   file: '<svg class="type-icon" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v5h5"></path></svg>',
   copy: '<svg viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"></path></svg>',
   pin: '<svg viewBox="0 0 24 24"><path d="m14 4 6 6-3 1-4 4-1 5-2-2-4 4-1-1 4-4-2-2 5-1 4-4z"></path></svg>',
   download: '<svg viewBox="0 0 24 24"><path d="M12 3v13m0 0 5-5m-5 5-5-5"></path><path d="M4 20h16"></path></svg>',
-  edit: '<svg viewBox="0 0 24 24"><path d="m4 16-1 5 5-1L19 9l-4-4z"></path><path d="m13.5 6.5 4 4"></path></svg>',
-  move: '<svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"></path><path d="m8 7 4-4 4 4M8 17l4 4 4-4M7 8l-4 4 4 4M17 8l4 4-4 4"></path></svg>',
-  restore: '<svg viewBox="0 0 24 24"><path d="M4 8v6h6"></path><path d="M5.5 15A8 8 0 1 0 7 6.5L4 9"></path></svg>',
   bolt: '<svg viewBox="0 0 24 24"><path d="m13 2-8 12h7l-1 8 8-12h-7z"></path></svg>',
 };
 
@@ -466,11 +378,10 @@ const views = { sync: $("syncView"), clipboard: $("clipboardView"), files: $("fi
 const tabButtons = { sync: $("syncTab"), clipboard: $("clipTab"), files: $("filesTab") };
 const clipboardState = { pinned: null, recent: null, loadedAt: 0, loading: false };
 const fileState = {
-  folders: [], location: "root", result: null, loadedAt: 0, cache: new Map(), selected: new Set(), sort: "newest",
-  search: "", loading: false, loadingMore: false, storage: null, activeView: "browse"
+  pinned: null, temporary: null, loadedAt: 0, loading: false,
+  cursors: { pinned: null, temporary: null }, loadingMore: { pinned: false, temporary: false }
 };
 let activeTab = "sync";
-let editorSubmit = null;
 let confirmSubmit = null;
 
 function token() { return localStorage.getItem("cloudbridge_token") || ""; }
@@ -556,7 +467,7 @@ function showView(name) {
     tabButtons[key].setAttribute("aria-selected", key === name ? "true" : "false");
   });
   if (name === "clipboard") loadClipboard();
-  if (name === "files") loadFileManager();
+  if (name === "files") loadFiles();
 }
 
 function renderClipboardList(target, items, pinned) {
@@ -622,317 +533,106 @@ async function toggleClipboardPin(item, pinned) {
   } catch (error) { setStatus(error.message); }
 }
 
-function folderById(id) { return fileState.folders.find((folder) => folder.id === id); }
-function folderChildren(parentId) { return fileState.folders.filter((folder) => (folder.parent_id || null) === (parentId || null)); }
-function folderPath(id) {
-  const result = [];
-  const seen = new Set();
-  let folder = folderById(id);
-  while (folder && !seen.has(folder.id)) { seen.add(folder.id); result.unshift(folder); folder = folder.parent_id ? folderById(folder.parent_id) : null; }
-  return result;
-}
-function folderDescendantIds(id) {
-  const ids = new Set([id]); let changed = true;
-  while (changed) { changed = false; fileState.folders.forEach((folder) => { if (folder.parent_id && ids.has(folder.parent_id) && !ids.has(folder.id)) { ids.add(folder.id); changed = true; } }); }
-  return ids;
+function fileMeta(file, pinned) {
+  const status = pinned ? "Kept" : (file.status || "temporary");
+  return `${formatSize(file.size)} | ${status} | ${formatTime(file.uploaded_at)}`;
 }
 
-function workspaceCacheKey() { return `${fileState.activeView}:${fileState.location}:${fileState.sort}`; }
-function restoreWorkspaceCache() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(WORKSPACE_CACHE_KEY) || "null");
-    if (!saved || Date.now() - saved.savedAt > WORKSPACE_CACHE_MAX_MS) return localStorage.removeItem(WORKSPACE_CACHE_KEY);
-    fileState.cache.set(saved.key, { data: saved.data, loadedAt: saved.savedAt });
-    if (saved.data?.folders) fileState.folders = saved.data.folders;
-  } catch { localStorage.removeItem(WORKSPACE_CACHE_KEY); }
-}
-function persistWorkspaceCache(key, data) {
-  try { localStorage.setItem(WORKSPACE_CACHE_KEY, JSON.stringify({ key, data, savedAt: Date.now() })); } catch {}
-}
-function applyStorage(data) {
-  if (!data) return;
-  fileState.storage = data;
-  const ratio = Math.max(0, Math.min(1, Number(data.usage_ratio || 0)));
-  $("storageFill").style.width = (ratio * 100).toFixed(2) + "%";
-  $("storageFill").className = "storage-fill" + (ratio >= .85 ? " danger" : ratio >= .7 ? " warn" : "");
-  $("storageText").textContent = `${formatSize(data.used_bytes)} / ${formatSize(data.quota_bytes)}`;
-  if (ratio >= .95) setStatus("Storage is almost full.");
-}
-function normalizeWorkspace(data) {
-  if (data.folders) fileState.folders = data.folders;
-  applyStorage(data.storage);
-  return { ...data, folders: data.children || [] };
-}
-
-function renderTreeLevel(parentId = null, depth = 0) {
-  return folderChildren(parentId).map((folder) => {
-    const active = fileState.location === folder.id ? " active" : "";
-    return `<div class="${depth ? "tree-indent" : ""}"><button class="tree-item${active}" data-location="${folder.id}">${icons.folder}<span>${escapeHtml(folder.name)}</span></button>${renderTreeLevel(folder.id, depth + 1)}</div>`;
-  }).join("");
-}
-
-function renderFolderTree() {
-  const tree = $("folderTree");
-  tree.innerHTML = `<button class="tree-item ${fileState.location === "root" ? "active" : ""}" data-location="root">${icons.folder}<span>CloudBridge</span></button>
-    <button class="tree-item ${fileState.location === "inbox" ? "active" : ""}" data-location="inbox">${icons.inbox}<span>Inbox</span></button>
-    ${renderTreeLevel()}<button class="tree-item ${fileState.location === "trash" ? "active" : ""}" data-location="trash">${icons.trash}<span>Trash</span></button>`;
-  tree.querySelectorAll("[data-location]").forEach((button) => button.onclick = () => navigateFiles(button.dataset.location));
-}
-
-function renderBreadcrumb() {
-  const crumb = $("breadcrumb");
-  const parts = [{ id: "root", name: "CloudBridge" }];
-  if (fileState.location === "inbox") parts.push({ id: "inbox", name: "Inbox" });
-  else if (fileState.location === "trash") parts.push({ id: "trash", name: "Trash" });
-  else if (fileState.location !== "root") parts.push(...folderPath(fileState.location).map((folder) => ({ id: folder.id, name: folder.name })));
-  if (fileState.activeView === "search") parts.push({ id: "search", name: "Search" });
-  crumb.innerHTML = parts.map((part, index) => `${index ? '<span class="crumb-sep">/</span>' : ""}<button class="crumb" data-location="${part.id}" ${part.id === "search" ? "disabled" : ""}>${escapeHtml(part.name)}</button>`).join("");
-  crumb.querySelectorAll("button:not([disabled])").forEach((button) => button.onclick = () => navigateFiles(button.dataset.location));
-}
-
-function fileRow(file, trashMode = false) {
-  const selected = fileState.selected.has(file.id);
-  const actions = trashMode
-    ? `${iconButton("restore", "Restore")}${iconButton("trash", "Delete permanently", "danger")}`
-    : `${iconButton("download", "Download")}${iconButton("pin", file.pinned ? "Unpin" : "Pin", "optional-action")}${iconButton("edit", "Rename", "optional-action")}${iconButton("trash", "Move to Trash", "danger")}`;
-  return `<article class="browser-row ${selected ? "selected" : ""}" data-file-id="${file.id}">
-    <div class="file-name"><input type="checkbox" ${selected ? "checked" : ""} aria-label="Select ${escapeHtml(file.filename)}">${icons.file}<span class="file-name-text">${escapeHtml(file.filename)}</span></div>
-    <span class="row-meta">${formatSize(file.size)}</span><span class="row-meta">${trashMode ? "Trash" : escapeHtml(file.status || "")}</span><div class="row-actions">${actions}</div>
-  </article>`;
-}
-
-function folderRow(folder, trashMode = false, isInbox = false) {
-  const actions = trashMode
-    ? `${iconButton("restore", "Restore")}${iconButton("trash", "Delete permanently", "danger")}`
-    : isInbox ? "" : `${iconButton("edit", "Rename")}${iconButton("move", "Move", "optional-action")}${iconButton("trash", "Move to Trash", "danger")}`;
-  const location = isInbox ? "inbox" : folder.id;
-  return `<article class="browser-row" data-folder-id="${folder.id || "inbox"}">
-    <div class="file-name">${isInbox ? icons.inbox : icons.folder}${trashMode ? `<span class="file-name-text">${escapeHtml(folder.name)}</span>` : `<button class="folder-open" data-open="${location}">${escapeHtml(folder.name)}</button>`}</div>
-    <span class="row-meta">${isInbox && folder.count != null ? folder.count + " files" : "Folder"}</span><span class="row-meta">${trashMode ? "Trash" : "Saved"}</span><div class="row-actions">${actions}</div>
-  </article>`;
-}
-
-function bindBrowserActions() {
-  $("browserList").querySelectorAll("[data-open]").forEach((button) => button.onclick = () => navigateFiles(button.dataset.open));
-  $("browserList").querySelectorAll("[data-file-id]").forEach((row) => {
-    const id = row.dataset.fileId;
-    const file = (fileState.result?.files || []).find((item) => item.id === id);
-    row.querySelector("input").onchange = (event) => { event.target.checked ? fileState.selected.add(id) : fileState.selected.delete(id); renderBrowser(); };
-    const buttons = row.querySelectorAll(".row-actions button");
-    if (fileState.activeView === "trash") {
-      buttons[0].onclick = () => bulkFiles("restore", [id]);
-      buttons[1].onclick = () => confirmAction("Delete file?", "This permanently removes the file.", () => bulkFiles("delete_permanently", [id]), "Delete");
-    } else {
-      buttons[0].onclick = () => downloadFile(file);
-      buttons[1].onclick = () => bulkFiles(file.pinned ? "unpin" : "pin", [id]);
-      buttons[2].onclick = () => editFile(file);
-      buttons[3].onclick = () => confirmAction("Move to Trash?", file.filename, () => bulkFiles("trash", [id]), "Move");
-    }
-  });
-  $("browserList").querySelectorAll("[data-folder-id]").forEach((row) => {
-    const id = row.dataset.folderId;
-    if (id === "inbox") return;
-    const folder = (fileState.result?.folders || []).find((item) => item.id === id);
-    const buttons = row.querySelectorAll(".row-actions button");
-    if (fileState.activeView === "trash") {
-      buttons[0].onclick = () => folderAction(folder, "restore");
-      buttons[1].onclick = () => confirmAction("Delete folder?", "This permanently removes every file and subfolder inside it.", () => deleteFolder(folder), "Delete");
-    } else {
-      buttons[0].onclick = () => editFolder(folder);
-      buttons[1].onclick = () => moveFolder(folder);
-      buttons[2].onclick = () => confirmAction("Move folder to Trash?", "Every file and subfolder inside it moves with it.", () => folderAction(folder, "trash"), "Move");
-    }
-  });
-  const loadMore = $("browserList").querySelector("[data-load-more]");
-  if (loadMore) loadMore.onclick = loadMoreFiles;
-}
-
-function renderBrowser() {
-  const list = $("browserList");
-  if (fileState.loading && !fileState.result) { list.innerHTML = skeletonRows(); return; }
-  const result = fileState.result || { folders: [], files: [] };
-  const trashMode = fileState.activeView === "trash";
-  let folders = result.folders || [];
-  if (fileState.location === "root" && fileState.activeView === "browse") folders = [{ id: null, name: "Inbox", count: result.inbox_count, inbox: true }, ...folders];
-  const rows = [
-    ...folders.map((folder) => folderRow(folder, trashMode, folder.inbox)),
-    ...(result.files || []).map((file) => fileRow(file, trashMode))
-  ];
-  const more = result.has_more ? `<div class="load-more"><button class="secondary" data-load-more ${fileState.loadingMore ? "disabled" : ""}>${fileState.loadingMore ? "Loading" : "Load more"}</button></div>` : "";
-  list.innerHTML = rows.length ? rows.join("") + more : emptyState(trashMode ? "trash" : "folder", trashMode ? "Trash is empty" : "Nothing here", trashMode ? "Deleted items stay for 7 days." : "Upload a file or create a folder.");
-  bindBrowserActions();
-  renderSelectionBar();
-}
-
-function renderSelectionBar() {
-  const bar = $("selectionBar");
-  const count = fileState.selected.size;
-  bar.classList.toggle("hidden", !count);
-  if (!count) return;
-  if (fileState.activeView === "trash") {
-    bar.innerHTML = `<strong>${count} selected</strong><button class="tertiary" data-action="restore">Restore</button><button class="danger tertiary" data-action="delete_permanently">Delete</button><button class="tertiary" data-action="clear">Clear</button>`;
-  } else {
-    bar.innerHTML = `<strong>${count} selected</strong><button class="tertiary" data-action="move">Move</button><button class="tertiary" data-action="pin">Pin</button><button class="tertiary" data-action="unpin">Unpin</button><button class="danger tertiary" data-action="trash">Trash</button><button class="tertiary" data-action="clear">Clear</button>`;
+function renderFileList(group) {
+  const pinned = group === "pinned";
+  const target = pinned ? "pinnedFilesList" : "temporaryFilesList";
+  const items = fileState[group] || [];
+  const list = $(target);
+  if (!items.length) {
+    list.innerHTML = emptyState(
+      "file",
+      pinned ? "No pinned files" : "No temporary files",
+      pinned ? "Pin a temporary file to keep it." : "New transfers appear here."
+    );
+    return;
   }
-  bar.querySelectorAll("[data-action]").forEach((button) => button.onclick = () => {
-    const action = button.dataset.action;
-    if (action === "clear") { fileState.selected.clear(); return renderBrowser(); }
-    if (action === "move") return moveFiles([...fileState.selected]);
-    if (action === "trash" || action === "delete_permanently") return confirmAction(action === "trash" ? "Move selected files?" : "Delete selected files?", `${count} files selected.`, () => bulkFiles(action, [...fileState.selected]), action === "trash" ? "Move" : "Delete");
-    bulkFiles(action, [...fileState.selected]);
+  list.innerHTML = items.map((file) => `<article class="file-entry" data-file-id="${file.id}">
+    <div class="file-main">${icons.file}<div class="file-details"><div class="file-title">${escapeHtml(file.filename)}</div><div class="file-meta">${escapeHtml(fileMeta(file, pinned))}</div></div>
+      <div class="file-actions">${iconButton("download", "Download")}${iconButton("pin", pinned ? "Unpin" : "Pin")}</div>
+    </div>
+  </article>`).join("");
+  list.querySelectorAll("[data-file-id]").forEach((row) => {
+    const file = items.find((item) => item.id === row.dataset.fileId);
+    const buttons = row.querySelectorAll("button");
+    buttons[0].onclick = () => downloadFile(file);
+    buttons[1].onclick = () => {
+      if (!pinned) return toggleFilePin(file, false);
+      confirmAction(
+        "Unpin file?",
+        "This file can be removed automatically after its temporary retention expires.",
+        () => toggleFilePin(file, true),
+        "Unpin"
+      );
+    };
   });
-}
-
-async function loadFileManager(force = false) {
-  try { await navigateFiles(fileState.location, force); }
-  catch (error) { setStatus("Files: " + error.message); }
-}
-
-async function navigateFiles(location, force = false) {
-  fileState.location = location || "root";
-  fileState.activeView = location === "trash" ? "trash" : "browse";
-  fileState.search = "";
-  $("fileSearch").value = "";
-  fileState.selected.clear();
-  renderFolderTree(); renderBreadcrumb();
-  const cacheKey = workspaceCacheKey();
-  const cached = fileState.cache.get(cacheKey);
-  if (!force && cached) {
-    fileState.result = normalizeWorkspace(cached.data); fileState.loading = false;
-    renderFolderTree(); renderBreadcrumb(); renderBrowser();
-    if (Date.now() - cached.loadedAt < CACHE_MS) return;
+  if (fileState.cursors[group]) {
+    const more = document.createElement("div");
+    more.className = "load-more";
+    more.innerHTML = `<button class="secondary" ${fileState.loadingMore[group] ? "disabled" : ""}>${fileState.loadingMore[group] ? "Loading" : "Load more"}</button>`;
+    more.querySelector("button").onclick = () => loadMoreFiles(group);
+    list.appendChild(more);
   }
+}
+
+function renderFiles() {
+  const pinned = fileState.pinned || [];
+  const temporary = fileState.temporary || [];
+  $("pinnedFilesCount").textContent = pinned.length;
+  $("temporaryFilesCount").textContent = temporary.length;
+  $("filesSummary").textContent = `${pinned.length} pinned | ${temporary.length} temporary`;
+  renderFileList("pinned");
+  renderFileList("temporary");
+}
+
+async function loadFiles(force = false) {
+  if (fileState.loading) return;
+  if (!force && fileState.pinned && Date.now() - fileState.loadedAt < CACHE_MS) return renderFiles();
   fileState.loading = true;
-  if (!cached) { fileState.result = null; renderBrowser(); }
+  if (!fileState.pinned) {
+    $("pinnedFilesList").innerHTML = skeletonRows(3);
+    $("temporaryFilesList").innerHTML = skeletonRows(4);
+  }
   try {
-    const path = `/api/files/workspace?folder_id=${encodeURIComponent(fileState.location)}&sort=${encodeURIComponent(fileState.sort)}&limit=30&offset=0`;
-    const data = await apiJson(path);
-    fileState.result = normalizeWorkspace(data);
+    const [pinned, temporary] = await Promise.all([
+      apiJson("/api/files/history?pinned=true&limit=50"),
+      apiJson("/api/files/history?pinned=false&limit=50")
+    ]);
+    fileState.pinned = pinned.items || [];
+    fileState.temporary = temporary.items || [];
+    fileState.cursors.pinned = pinned.next_cursor || null;
+    fileState.cursors.temporary = temporary.next_cursor || null;
     fileState.loadedAt = Date.now();
-    fileState.cache.set(cacheKey, { data, loadedAt: Date.now() });
-    persistWorkspaceCache(cacheKey, data);
-    renderFolderTree(); renderBreadcrumb(); renderBrowser();
-  } catch (error) { setStatus(error.message); }
+    renderFiles();
+  } catch (error) { setStatus("Files: " + error.message); }
   finally { fileState.loading = false; }
 }
 
-async function loadMoreFiles() {
-  if (fileState.loadingMore || !fileState.result?.has_more) return;
-  fileState.loadingMore = true; renderBrowser();
+async function loadMoreFiles(group) {
+  const cursor = fileState.cursors[group];
+  if (!cursor || fileState.loadingMore[group]) return;
+  fileState.loadingMore[group] = true; renderFileList(group);
   try {
-    const offset = Number(fileState.result.next_offset || 0);
-    const data = await apiJson(`/api/files/workspace?folder_id=${encodeURIComponent(fileState.location)}&sort=${encodeURIComponent(fileState.sort)}&limit=30&offset=${offset}`);
-    const currentFiles = fileState.result.files || [];
-    const normalized = normalizeWorkspace(data);
-    fileState.result = { ...normalized, files: [...currentFiles, ...(normalized.files || [])] };
-    const cacheData = { ...data, files: fileState.result.files };
-    const key = workspaceCacheKey();
-    fileState.cache.set(key, { data: cacheData, loadedAt: Date.now() });
-    persistWorkspaceCache(key, cacheData);
+    const pinned = group === "pinned";
+    const data = await apiJson(`/api/files/history?pinned=${pinned}&limit=50&before_uploaded_at=${encodeURIComponent(cursor)}`);
+    const known = new Set((fileState[group] || []).map((item) => item.id));
+    fileState[group] = [...(fileState[group] || []), ...(data.items || []).filter((item) => !known.has(item.id))];
+    fileState.cursors[group] = data.next_cursor || null;
   } catch (error) { setStatus(error.message); }
-  finally { fileState.loadingMore = false; renderBrowser(); }
+  finally { fileState.loadingMore[group] = false; renderFiles(); }
 }
 
-let searchTimer = null;
-async function searchFiles(query) {
-  clearTimeout(searchTimer);
-  const q = query.trim();
-  if (!q) return navigateFiles(fileState.location, true);
-  searchTimer = setTimeout(async () => {
-    fileState.activeView = "search"; fileState.selected.clear(); renderBreadcrumb();
-    fileState.loading = true; fileState.result = null; renderBrowser();
-    try { fileState.result = await apiJson(`/api/files/search?q=${encodeURIComponent(q)}`); renderBrowser(); }
-    catch (error) { setStatus(error.message); }
-    finally { fileState.loading = false; }
-  }, 260);
-}
-
-function folderOptions(includeInbox = true, exclude = new Set()) {
-  const options = [];
-  if (includeInbox) options.push({ value: "inbox", label: "Inbox" });
-  options.push({ value: "root", label: "CloudBridge" });
-  function walk(parentId = null, depth = 0) {
-    folderChildren(parentId).forEach((folder) => {
-      if (!exclude.has(folder.id)) options.push({ value: folder.id, label: `${"  ".repeat(depth)}${folder.name}` });
-      walk(folder.id, depth + 1);
-    });
-  }
-  walk();
-  return options;
-}
-
-function openEditor({ title, label = "Name", value = "", options = null, saveText = "Save", onSubmit }) {
-  $("editorTitle").textContent = title;
-  $("editorLabel").textContent = label;
-  $("editorSave").textContent = saveText;
-  $("editorInput").classList.toggle("hidden", Boolean(options));
-  $("editorSelect").classList.toggle("hidden", !options);
-  if (options) $("editorSelect").innerHTML = options.map((item) => `<option value="${item.value}">${escapeHtml(item.label)}</option>`).join("");
-  else $("editorInput").value = value;
-  editorSubmit = onSubmit;
-  $("editorDialog").showModal();
-  setTimeout(() => (options ? $("editorSelect") : $("editorInput")).focus(), 20);
-}
-
-function confirmAction(title, copy, onAccept, acceptText = "Delete") {
-  $("confirmTitle").textContent = title; $("confirmCopy").textContent = copy; $("confirmAccept").textContent = acceptText;
-  confirmSubmit = onAccept; $("confirmDialog").showModal();
-}
-
-async function createFolder() {
-  const parentId = fileState.location !== "root" && fileState.location !== "inbox" && fileState.location !== "trash" ? fileState.location : null;
-  openEditor({ title: "New folder", onSubmit: async (name) => {
-    await apiJson("/api/file-folders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, parent_id: parentId }) });
-    await refreshFiles("Folder created.");
-  }});
-}
-
-function editFolder(folder) {
-  openEditor({ title: "Rename folder", value: folder.name, onSubmit: async (name) => {
-    await apiJson(`/api/file-folders/${folder.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
-    await refreshFiles("Folder renamed.");
-  }});
-}
-
-function moveFolder(folder) {
-  const excluded = folderDescendantIds(folder.id);
-  const options = folderOptions(false, excluded);
-  openEditor({ title: "Move folder", label: "Destination", options, saveText: "Move", onSubmit: async (value) => {
-    await apiJson(`/api/file-folders/${folder.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ parent_id: value === "root" ? null : value }) });
-    await refreshFiles("Folder moved.");
-  }});
-}
-
-async function folderAction(folder, action) {
+async function toggleFilePin(file, wasPinned) {
   try {
-    await apiJson(`/api/file-folders/${folder.id}/${action}`, { method: "POST" });
-    await refreshFiles(action === "restore" ? "Folder restored." : "Folder moved to Trash.");
-  } catch (error) { setStatus(error.message); }
-}
-
-async function deleteFolder(folder) {
-  try { await apiJson(`/api/file-folders/${folder.id}`, { method: "DELETE" }); await refreshFiles("Folder deleted."); }
-  catch (error) { setStatus(error.message); }
-}
-
-function editFile(file) {
-  openEditor({ title: "Rename file", value: file.filename, onSubmit: async (filename) => {
-    await apiJson(`/api/files/${file.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filename }) });
-    await refreshFiles("File renamed.");
-  }});
-}
-
-function moveFiles(ids) {
-  openEditor({ title: "Move files", label: "Destination", options: folderOptions(true), saveText: "Move", onSubmit: async (folderId) => {
-    await bulkFiles("move", ids, folderId);
-  }});
-}
-
-async function bulkFiles(action, ids, folderId = null) {
-  try {
-    await apiJson("/api/files/bulk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, ids, folder_id: folderId }) });
-    fileState.selected.clear();
-    await refreshFiles({ move: "Files moved.", pin: "Files pinned.", unpin: "Files unpinned.", trash: "Files moved to Trash.", restore: "Files restored.", delete_permanently: "Files deleted." }[action] || "Updated.");
+    await apiJson(`/api/files/${encodeURIComponent(file.id)}/${wasPinned ? "unpin" : "pin"}`, { method: "POST" });
+    fileState.loadedAt = 0;
+    await loadFiles(true);
+    notifyRealtime("manager", { entity: "files" });
+    setStatus(wasPinned ? "File is temporary." : "File pinned.");
   } catch (error) { setStatus(error.message); }
 }
 
@@ -946,53 +646,31 @@ async function downloadFile(file) {
   } catch (error) { setStatus(error.message); }
 }
 
-async function uploadManagerFile(file) {
-  if (!file) return;
-  const form = new FormData(); form.append("file", file); form.append("source", "web-manager"); form.append("device_id", deviceId);
-  if (fileState.location !== "root" && fileState.location !== "inbox" && fileState.location !== "trash") form.append("folder_id", fileState.location);
-  try {
-    setStatus("Uploading…");
-    const response = await fetch(API_BASE + "/api/files/upload", { method: "POST", headers: authHeaders(), body: form });
-    if (!response.ok) throw new Error((await response.json()).detail || "Upload failed");
-    const data = await response.json(); await notifyRealtime("file", { id: data.item?.id, filename: data.item?.filename });
-    await refreshFiles("Uploaded.");
-  } catch (error) { setStatus(error.message); }
-}
-
 async function refreshFiles(message = "Refreshed.") {
-  fileState.cache.clear();
-  await navigateFiles(fileState.location, true);
-  notifyRealtime("manager", { entity: "files" }); setStatus(message);
+  fileState.loadedAt = 0;
+  await loadFiles(true);
+  notifyRealtime("manager", { entity: "files" });
+  setStatus(message);
+}
+function confirmAction(title, copy, onAccept, acceptText = "Delete") {
+  $("confirmTitle").textContent = title; $("confirmCopy").textContent = copy; $("confirmAccept").textContent = acceptText;
+  confirmSubmit = onAccept; $("confirmDialog").showModal();
 }
 
 $("refreshClipboardBtn").innerHTML = icons.refresh;
-$("newFolderBtn").innerHTML = icons.folderPlus;
-$("uploadFolderBtn").innerHTML = icons.upload;
 $("refreshFilesBtn").innerHTML = icons.refresh;
 $("quickActionsBtn").innerHTML = icons.bolt;
 tabButtons.sync.onclick = () => showView("sync"); tabButtons.clipboard.onclick = () => showView("clipboard"); tabButtons.files.onclick = () => showView("files");
 $("refreshClipboardBtn").onclick = () => loadClipboard(true);
 $("refreshFilesBtn").onclick = () => refreshFiles();
-$("newFolderBtn").onclick = createFolder;
-$("uploadFolderBtn").onclick = () => $("managerFileInput").click();
-$("managerFileInput").onchange = (event) => { uploadManagerFile(event.target.files[0]); event.target.value = ""; };
-$("fileSort").onchange = (event) => { fileState.sort = event.target.value; navigateFiles(fileState.location, true); };
-$("fileSearch").oninput = (event) => searchFiles(event.target.value);
 $("clipboardMobileSwitch").querySelectorAll("button").forEach((button) => button.onclick = () => {
   $("clipboardBoard").dataset.mobileView = button.dataset.clipView;
   $("clipboardMobileSwitch").querySelectorAll("button").forEach((item) => item.classList.toggle("active", item === button));
 });
-
-$("editorCancel").onclick = () => $("editorDialog").close();
-$("editorForm").onsubmit = async (event) => {
-  event.preventDefault();
-  const value = $("editorSelect").classList.contains("hidden") ? $("editorInput").value.trim() : $("editorSelect").value;
-  if (!value) return setStatus("A value is required.");
-  $("editorSave").disabled = true;
-  try { await editorSubmit(value); $("editorDialog").close(); }
-  catch (error) { setStatus(error.message); }
-  finally { $("editorSave").disabled = false; }
-};
+$("filesMobileSwitch").querySelectorAll("button").forEach((button) => button.onclick = () => {
+  $("filesBoard").dataset.mobileView = button.dataset.fileView;
+  $("filesMobileSwitch").querySelectorAll("button").forEach((item) => item.classList.toggle("active", item === button));
+});
 $("confirmCancel").onclick = () => $("confirmDialog").close();
 $("confirmAccept").onclick = async () => {
   $("confirmAccept").disabled = true;
@@ -1059,11 +737,11 @@ $("fileBtn").onclick = async () => {
   try {
     setStatus("Uploading…"); const response = await fetch(API_BASE + "/api/files/upload", { method: "POST", headers: authHeaders(), body: form });
     if (!response.ok) throw new Error((await response.json()).detail || "Upload failed");
-    const data = await response.json(); notifyRealtime("file", data.item || {}); fileState.cache.clear(); setStatus("File sent.");
+    const data = await response.json(); notifyRealtime("file", data.item || {}); fileState.loadedAt = 0; setStatus("File sent.");
   } catch (error) { setStatus(error.message); }
 };
 $("resetBtn").onclick = () => confirmAction("Forget pairing?", "This browser must be paired again from Windows.", () => {
-  localStorage.removeItem("cloudbridge_token"); localStorage.removeItem(WORKSPACE_CACHE_KEY); setPaired(false); setStatus("Pairing removed.");
+  localStorage.removeItem("cloudbridge_token"); setPaired(false); setStatus("Pairing removed.");
 }, "Forget");
 
 document.addEventListener("visibilitychange", () => {
@@ -1072,7 +750,6 @@ document.addEventListener("visibilitychange", () => {
   if (activeTab === "clipboard" && Date.now() - clipboardState.loadedAt > CACHE_MS) loadClipboard(true);
 });
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
-restoreWorkspaceCache();
 if (token()) setPaired(true);
 autoClaimIfRequested().then((claimed) => {
   if (!claimed && token()) checkPairing();

@@ -50,23 +50,10 @@ POST /api/clipboard/{id}/unpin
 POST /api/files/upload
 GET  /api/files/pending
 GET  /api/files/history
-GET  /api/files/browse
-GET  /api/files/search
-GET  /api/files/trash
-GET  /api/files/storage
-GET  /api/files/workspace
-POST /api/files/bulk
-PATCH /api/files/{id}
 GET  /api/files/{id}/download
 POST /api/files/{id}/ack
 POST /api/files/{id}/pin
 POST /api/files/{id}/unpin
-GET  /api/file-folders/tree
-POST /api/file-folders
-PATCH /api/file-folders/{id}
-POST /api/file-folders/{id}/trash
-POST /api/file-folders/{id}/restore
-DELETE /api/file-folders/{id}
 POST /api/quick-actions/setup
 DELETE /api/quick-actions/setup
 POST /api/quick/clipboard/push
@@ -128,9 +115,10 @@ PWA Manager menyediakan menu ikon petir `Quick Actions`. Pilih `Create setup key
 - `CloudBridge Pull` - satu tap mengambil teks terbaru dari device lain ke clipboard iPhone.
 - `CloudBridge` - ikon PWA utama untuk membuka manager.
 
-Untuk Push, gunakan `Get Contents of URL` dengan metode `POST`, request body
-`File`, dan pilih hasil `Get Clipboard`. Endpoint juga tetap menerima JSON lama
-dengan field `content`.
+Untuk Push, ubah hasil `Get Clipboard` menjadi teks terlebih dahulu. Gunakan
+`Get Contents of URL` dengan metode `POST`, request body `File`, lalu pilih hasil
+`Get Text from Clipboard`. Endpoint juga tetap menerima JSON dengan field
+`content`.
 
 Tambahkan kedua shortcut ke Home Screen dari aplikasi Shortcuts. Membuat key baru otomatis mengganti key Quick Actions lama. Gunakan `Revoke key` untuk menonaktifkan kedua shortcut tanpa memutus pairing PWA.
 
@@ -144,16 +132,14 @@ Tambahkan kedua shortcut ke Home Screen dari aplikasi Shortcuts. Membuat key bar
 - Setelah Windows mengirim `ack`, file ditandai `downloaded`, tetapi object storage tidak langsung dihapus.
 - Cleanup otomatis berjalan oportunistik maksimal 1x per 24 jam setelah operasi tulis penting.
 - Clipboard unpinned disimpan 7 hari.
-- File di `Inbox` tetap bersifat transfer sementara dan dibersihkan setelah masa tenggang 24 jam jika tidak dipin.
-- File yang dipindahkan ke folder menjadi koleksi tersimpan dan tidak mengikuti TTL Inbox.
-- Item di `Trash` dibersihkan permanen setelah 7 hari. Penghapusan permanen selalu menghapus object Storage sebelum row database.
-- File pinned tetap disimpan sampai user melakukan unpin atau menghapusnya sendiri.
+- File unpinned bersifat transfer sementara dan dibersihkan setelah retention serta grace period berakhir.
+- File pinned tetap disimpan sampai user melakukan unpin.
 
 ## CloudBridge Manager
 
-PWA memiliki workspace clipboard dan file yang sama di iPhone maupun PC. Clipboard dibagi menjadi `Pinned` dan `Recent`. File manager menyediakan Inbox, folder bertingkat, breadcrumb, pencarian, sort, multi-select, move, rename, pin, Trash, restore, dan hapus permanen.
+PWA memiliki workspace clipboard dan file yang sama di iPhone maupun PC. Clipboard dibagi menjadi `Pinned` dan `Recent`; Files dibagi menjadi `Pinned` dan `Temporary`. File hanya memiliki aksi Download, Pin, dan Unpin. Unpin memakai konfirmasi karena file dapat masuk cleanup otomatis.
 
-PWA menampilkan UI langsung dari token lokal, memvalidasi pairing di background, dan memakai cache workspace maksimal 24 jam. Tab Files mengambil folder, isi lokasi, dan statistik storage melalui satu request; daftar file dimuat 30 item per halaman.
+PWA menampilkan UI langsung dari token lokal dan memvalidasi pairing di background. Daftar Files dimuat 50 item per halaman dengan cursor pagination tanpa cache workspace berat.
 
 Di Windows tray, menu `Open CloudBridge Manager` membuka PWA manager:
 

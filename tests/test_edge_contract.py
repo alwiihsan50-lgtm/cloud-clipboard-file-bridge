@@ -3,7 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FUNCTION = (ROOT / "supabase/functions/cloudbridge/index.ts").read_text(encoding="utf-8")
-MIGRATION = (ROOT / "supabase/migrations/20260714114538_cloudbridge_file_manager.sql").read_text(
+REMOVAL_MIGRATION = (ROOT / "supabase/migrations/20260716053016_simplify_cloudbridge_files_pinned_temporary.sql").read_text(
     encoding="utf-8"
 )
 QUICK_MIGRATION = (
@@ -12,34 +12,35 @@ QUICK_MIGRATION = (
 PWA = (ROOT / "docs/app/index.html").read_text(encoding="utf-8")
 
 
-def test_file_manager_api_contract_is_present():
-    routes = (
-        "/api/file-folders/tree",
+def test_file_api_only_keeps_transfer_history_and_pin_contracts():
+    for route in (
+        "/api/files/upload",
+        "/api/files/pending",
+        "/api/files/history",
+        "/download",
+        "/ack",
+        "(pin|unpin)",
+    ):
+        assert route in FUNCTION
+    for removed in (
         "/api/file-folders",
+        "/api/files/workspace",
         "/api/files/browse",
         "/api/files/search",
         "/api/files/trash",
         "/api/files/storage",
         "/api/files/bulk",
-    )
-    for route in routes:
-        assert route in FUNCTION
-    assert 'req.method === "PATCH"' in FUNCTION
-    assert 'req.method === "DELETE"' in FUNCTION
+    ):
+        assert removed not in FUNCTION
 
 
-def test_file_manager_schema_supports_nested_folders_and_trash():
-    expected = (
-        "cloudbridge_file_folders",
-        "parent_id",
-        "folder_id",
-        "trashed_at",
-        "trashed_from_folder_id",
-        "cloudbridge_files_folder_idx",
-    )
-    for value in expected:
-        assert value in MIGRATION
-    assert "enable row level security" in MIGRATION.lower()
+def test_removal_migration_preserves_files_before_dropping_manager_schema():
+    assert "update public.cloudbridge_files" in REMOVAL_MIGRATION
+    assert "pinned = true" in REMOVAL_MIGRATION
+    for value in ("folder_id", "trashed_at", "trashed_from_folder_id"):
+        assert f"drop column if exists {value}" in REMOVAL_MIGRATION
+    assert "drop table if exists public.cloudbridge_file_folders" in REMOVAL_MIGRATION
+    assert "drop function if exists public.cloudbridge_storage_usage" in REMOVAL_MIGRATION
 
 
 def test_private_storage_path_is_removed_from_public_file_records():
@@ -48,18 +49,11 @@ def test_private_storage_path_is_removed_from_public_file_records():
     assert 'storage.from(BUCKET).remove' in FUNCTION
 
 
-def test_manager_ui_contains_core_clipboard_and_file_controls():
-    labels = (
-        "Pinned",
-        "Recent",
-        "Inbox",
-        "Trash",
-        "New folder",
-        "Move",
-        "Delete permanently",
-    )
-    for label in labels:
+def test_pwa_contains_lightweight_pinned_and_temporary_file_lists():
+    for label in ("Pinned", "Temporary", "Download", "Unpin file?"):
         assert label in PWA
+    for removed in ("Inbox", "Trash", "New folder", "Delete permanently", "Search files"):
+        assert removed not in PWA
     assert "localStorage" in PWA
     assert 'confirmAction("Forget pairing?"' in PWA
 
@@ -77,13 +71,11 @@ def test_quick_actions_are_scoped_and_revocable():
     assert "parent_device_id" in QUICK_MIGRATION
 
 
-def test_file_workspace_uses_aggregate_pagination_and_persistent_cache():
-    assert "/api/files/workspace" in FUNCTION
-    assert "cloudbridge_storage_usage" in FUNCTION
-    assert "cloudbridge_storage_usage" in QUICK_MIGRATION
-    assert "security invoker" in QUICK_MIGRATION.lower()
-    assert "limit=30&offset=0" in PWA
-    assert "WORKSPACE_CACHE_MAX_MS = 86400000" in PWA
+def test_file_history_uses_cursor_pagination_without_workspace_cache():
+    assert "before_uploaded_at" in FUNCTION
+    assert "next_cursor" in FUNCTION
+    assert "before_uploaded_at" in PWA
+    assert "WORKSPACE_CACHE" not in PWA
     assert "loadMoreFiles" in PWA
 
 
@@ -91,7 +83,8 @@ def test_quick_actions_setup_is_available_in_manager():
     for label in ("Quick Actions", "CloudBridge Push", "CloudBridge Pull", "Create setup key"):
         assert label in PWA
     assert 'if (token()) setPaired(true)' in PWA
-    assert "request body <strong>File</strong> = Clipboard" in PWA
+    assert "Get Text from Clipboard" in PWA
+    assert "request body <strong>File</strong> = Text" in PWA
 
 
 def test_quick_push_accepts_ios_shortcuts_raw_body():

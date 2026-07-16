@@ -236,7 +236,6 @@ Multipart form request:
 - `file`: uploaded file.
 - `source`: `ios-pwa` or `windows-tray`.
 - `device_id`: sender device id.
-- `folder_id`: optional destination folder UUID. Omit it to upload into `Inbox`.
 
 Response:
 
@@ -312,6 +311,8 @@ Returns recent file records for the manager UI. The response does not expose `st
 Query params:
 
 - `limit`: optional, default `50`, max `100`.
+- `pinned`: optional `true` or `false` filter.
+- `before_uploaded_at`: optional ISO timestamp cursor returned as `next_cursor`.
 
 ## `POST /api/files/{id}/pin`
 
@@ -320,73 +321,6 @@ Marks a file as pinned so automatic cleanup will not delete the row or storage o
 ## `POST /api/files/{id}/unpin`
 
 Removes the pinned status from a file.
-
-## File manager endpoints
-
-### `GET /api/file-folders/tree`
-
-Returns every active folder as a flat tree source. Each folder contains `id`, `name`, `parent_id`, and timestamps.
-
-### `POST /api/file-folders`
-
-Creates a folder. JSON body: `{ "name": "Project", "parent_id": null }`. `parent_id` may reference another active folder.
-
-### `PATCH /api/file-folders/{id}`
-
-Renames or moves a folder with `name` and/or `parent_id`. Moving a folder into itself or one of its descendants is rejected.
-
-### Folder lifecycle
-
-- `POST /api/file-folders/{id}/trash` moves the full subtree and its files to Trash.
-- `POST /api/file-folders/{id}/restore` restores the subtree. A conflicting root name receives a numeric suffix.
-- `DELETE /api/file-folders/{id}` permanently deletes a trashed subtree and its Storage objects.
-
-### `GET /api/files/browse`
-
-Browses one location with `folder_id=root`, `folder_id=inbox`, or a folder UUID. Optional `sort` values are `newest`, `oldest`, `name`, and `size`.
-
-### `GET /api/files/search`
-
-Searches active folders and files by `q`. Queries shorter than two characters return an empty result.
-
-### `GET /api/files/trash`
-
-Returns top-level trashed folders and standalone trashed files. Nested contents remain attached to their trashed parent folder.
-
-### `GET /api/files/storage`
-
-Returns `used_bytes`, the configured `quota_bytes`, and `usage_ratio` for the manager storage meter.
-
-### `GET /api/files/workspace`
-
-Returns the folder tree, children and files for one location, Inbox count, pagination state, and aggregate storage usage in one response.
-
-Query params:
-
-- `folder_id`: `root`, `inbox`, `trash`, or a folder UUID.
-- `sort`: `newest`, `oldest`, `name`, or `size`.
-- `limit`: default `30`, max `50`.
-- `offset`: default `0`, max `10000`.
-
-The response includes `has_more` and `next_offset`. Existing browse, tree, trash, and storage endpoints remain available for older clients.
-
-### `PATCH /api/files/{id}`
-
-Renames an active file. The Storage object path remains private and is never returned.
-
-### `POST /api/files/bulk`
-
-Applies one action to 1-100 file IDs. JSON fields:
-
-```json
-{
-  "ids": ["uuid"],
-  "action": "move",
-  "folder_id": "inbox"
-}
-```
-
-Supported actions: `move`, `pin`, `unpin`, `trash`, `restore`, and `delete_permanently`. Permanent deletion is accepted only for trashed files.
 
 ## Quick Actions
 
@@ -400,7 +334,7 @@ Requires the parent full device token and revokes its Quick Actions token.
 
 ### `POST /api/quick/clipboard/push`
 
-Requires a `clipboard_quick` token. JSON body: `{ "content": "text" }`. Empty content is rejected and the maximum UTF-8 payload is 1 MB. The server records source `ios-shortcut` and broadcasts a Realtime clipboard signal.
+Requires a `clipboard_quick` token. Accepts a raw text/File body from iOS Shortcuts or JSON `{ "content": "text" }`. Empty content is rejected and the maximum UTF-8 payload is 1 MB. The server records source `ios-shortcut` and broadcasts a Realtime clipboard signal.
 
 ### `GET /api/quick/clipboard/pull`
 
@@ -415,11 +349,9 @@ Admin-only manual cleanup endpoint.
 Cleanup policy:
 
 - Deletes unpinned clipboard records older than 7 days.
-- Deletes unpinned Inbox files after the temporary transfer retention window.
-- Deletes items left in Trash for 7 days.
+- Deletes all unpinned files after the temporary transfer retention window.
 - Deletes file objects from `cloudbridge-files` before deleting file rows.
 - Never deletes pinned clipboard or pinned files.
-- Does not expire active files stored inside user folders.
 
 ## Conflict Rules
 
