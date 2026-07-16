@@ -54,6 +54,7 @@ GET  /api/files/browse
 GET  /api/files/search
 GET  /api/files/trash
 GET  /api/files/storage
+GET  /api/files/workspace
 POST /api/files/bulk
 PATCH /api/files/{id}
 GET  /api/files/{id}/download
@@ -66,6 +67,10 @@ PATCH /api/file-folders/{id}
 POST /api/file-folders/{id}/trash
 POST /api/file-folders/{id}/restore
 DELETE /api/file-folders/{id}
+POST /api/quick-actions/setup
+DELETE /api/quick-actions/setup
+POST /api/quick/clipboard/push
+GET  /api/quick/clipboard/pull
 POST /api/cleanup
 ```
 
@@ -76,6 +81,8 @@ Authorization: Bearer <token>
 ```
 
 Token admin disimpan sebagai hash SHA-256 di tabel `cloudbridge_admin_tokens` dan hanya dipakai Windows Agent/tray untuk membuat pairing code. Token device iPhone dan PC Web Manager disimpan sebagai hash SHA-256 di tabel `cloudbridge_devices`.
+
+Token Quick Actions memakai scope `clipboard_quick`. Token ini hanya dapat push/pull clipboard dan tidak dapat membuka file, history, pairing, atau cleanup.
 
 ## Menjalankan di Windows Ini
 
@@ -113,6 +120,16 @@ Menu tray `Open CloudBridge Manager` membuat pairing code singkat dan otomatis m
 4. Tap `Pair iPhone`.
 5. Di Safari iPhone, gunakan `Add to Home Screen` supaya CloudBridge tampil seperti app.
 
+## Quick Actions iPhone
+
+PWA Manager menyediakan menu ikon petir `Quick Actions`. Pilih `Create setup key`, lalu ikuti dua resep yang ditampilkan untuk membuat:
+
+- `CloudBridge Push` - satu tap mengirim clipboard iPhone ke Windows.
+- `CloudBridge Pull` - satu tap mengambil teks terbaru dari device lain ke clipboard iPhone.
+- `CloudBridge` - ikon PWA utama untuk membuka manager.
+
+Tambahkan kedua shortcut ke Home Screen dari aplikasi Shortcuts. Membuat key baru otomatis mengganti key Quick Actions lama. Gunakan `Revoke key` untuk menonaktifkan kedua shortcut tanpa memutus pairing PWA.
+
 ## Data dan Konflik
 
 - Clipboard menyimpan `id`, `content`, `source`, `version`, `created_at`, dan `device_id`.
@@ -131,6 +148,8 @@ Menu tray `Open CloudBridge Manager` membuat pairing code singkat dan otomatis m
 ## CloudBridge Manager
 
 PWA memiliki workspace clipboard dan file yang sama di iPhone maupun PC. Clipboard dibagi menjadi `Pinned` dan `Recent`. File manager menyediakan Inbox, folder bertingkat, breadcrumb, pencarian, sort, multi-select, move, rename, pin, Trash, restore, dan hapus permanen.
+
+PWA menampilkan UI langsung dari token lokal, memvalidasi pairing di background, dan memakai cache workspace maksimal 24 jam. Tab Files mengambil folder, isi lokasi, dan statistik storage melalui satu request; daftar file dimuat 30 item per halaman.
 
 Di Windows tray, menu `Open CloudBridge Manager` membuka PWA manager:
 

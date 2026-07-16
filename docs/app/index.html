@@ -106,6 +106,7 @@
       gap: 10px;
     }
     header { min-height: 38px; display: flex; align-items: center; justify-content: space-between; }
+    .header-actions { display: flex; align-items: center; gap: 7px; }
     .pair-state {
       padding: 6px 10px;
       border: 1px solid var(--line);
@@ -226,6 +227,8 @@
       border-top: 1px solid var(--line); background: var(--panel); overflow-x: auto;
     }
     .selection-bar strong { margin-right: auto; white-space: nowrap; font-size: 12px; }
+    .load-more { display: flex; justify-content: center; padding: 10px; }
+    .load-more button { min-width: 132px; }
     .empty-state { min-height: 180px; display: grid; place-content: center; gap: 6px; padding: 24px; color: var(--muted); text-align: center; }
     .empty-state svg { width: 30px; height: 30px; margin: 0 auto; stroke: var(--faint); fill: none; stroke-width: 1.5; }
     .empty-state strong { color: var(--text); font-size: 13px; }
@@ -242,6 +245,14 @@
     .dialog-body { padding: 16px; display: grid; gap: 10px; }
     .dialog-copy { color: var(--muted); font-size: 12px; line-height: 1.45; }
     .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--line); }
+    .quick-dialog { width: min(720px, calc(100% - 24px)); max-height: min(88dvh, 780px); overflow: auto; }
+    .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .quick-card { padding: 12px; border: 1px solid var(--line); border-radius: 7px; background: #0e1c23; }
+    .quick-card h3 { margin-bottom: 8px; }
+    .quick-card ol { margin: 0; padding-left: 20px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .secret-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; }
+    .secret-row input { min-width: 0; font-family: ui-monospace, "Cascadia Code", monospace; font-size: 11px; }
+    .quick-note { color: var(--muted); font-size: 12px; line-height: 1.45; }
     .mobile-only { display: none; }
     @media (max-width: 760px) {
       main { width: 100%; padding: max(8px, env(safe-area-inset-top)) 8px max(7px, env(safe-area-inset-bottom)); gap: 7px; }
@@ -274,6 +285,7 @@
       .row-actions .icon-button { width: 31px; height: 31px; }
       .selection-bar { padding-inline: 8px; }
       .selection-bar strong { position: sticky; left: 0; padding-right: 5px; background: var(--panel); }
+      .quick-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 420px) {
       .sync-pane { grid-template-columns: 1fr 1fr; }
@@ -289,7 +301,10 @@
 <main>
   <header>
     <h1>CloudBridge</h1>
-    <div id="pairState" class="pair-state">Checking</div>
+    <div class="header-actions">
+      <button id="quickActionsBtn" class="icon-button hidden" title="Quick Actions" aria-label="Quick Actions"></button>
+      <div id="pairState" class="pair-state">Checking</div>
+    </div>
   </header>
 
   <div class="shell">
@@ -390,12 +405,37 @@
   <div class="dialog-actions"><button id="confirmCancel" class="secondary">Cancel</button><button id="confirmAccept" class="danger">Delete</button></div>
 </dialog>
 
+<dialog id="quickDialog" class="quick-dialog">
+  <div class="dialog-body">
+    <h2>Quick Actions</h2>
+    <p class="quick-note">Create two one-tap Home Screen shortcuts. A new key replaces the previous Quick Actions key.</p>
+    <div id="quickSetupEmpty">
+      <button id="quickCreateBtn">Create setup key</button>
+    </div>
+    <div id="quickSetupResult" class="hidden">
+      <label for="quickToken">Authorization value</label>
+      <div class="secret-row"><input id="quickToken" readonly><button class="secondary" data-copy="quickToken">Copy</button></div>
+      <label for="quickPushUrl">Push URL</label>
+      <div class="secret-row"><input id="quickPushUrl" readonly><button class="secondary" data-copy="quickPushUrl">Copy</button></div>
+      <label for="quickPullUrl">Pull URL</label>
+      <div class="secret-row"><input id="quickPullUrl" readonly><button class="secondary" data-copy="quickPullUrl">Copy</button></div>
+      <div class="quick-grid">
+        <section class="quick-card"><h3>CloudBridge Push</h3><ol><li>Get Clipboard</li><li>Get Contents of URL: POST, JSON body <strong>content</strong> = Clipboard</li><li>Add header <strong>Authorization</strong> using the value above</li><li>Show Notification: Sent</li><li>Add to Home Screen</li></ol></section>
+        <section class="quick-card"><h3>CloudBridge Pull</h3><ol><li>Get Contents of URL: GET</li><li>Add header <strong>Authorization</strong> using the value above</li><li>If result has value, Copy to Clipboard</li><li>Show Notification: Pulled</li><li>Add to Home Screen</li></ol></section>
+      </div>
+    </div>
+  </div>
+  <div class="dialog-actions"><button id="quickRevokeBtn" class="subtle-danger">Revoke key</button><button id="quickCloseBtn" class="secondary">Close</button></div>
+</dialog>
+
 <script>
 const API_BASE = "https://ajlkfzgpheegmwsnspxw.supabase.co/functions/v1/cloudbridge";
 const SUPABASE_BASE = "https://ajlkfzgpheegmwsnspxw.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_c4VLFI_5vVD2FokNBuX1iw_44NApC27";
 const REALTIME_TOPIC = "cloudbridge";
 const CACHE_MS = 60000;
+const WORKSPACE_CACHE_KEY = "cloudbridge_workspace_cache_v1";
+const WORKSPACE_CACHE_MAX_MS = 86400000;
 const icons = {
   refresh: '<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>',
   folderPlus: '<svg viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z"></path><path d="M12 11v5M9.5 13.5h5"></path></svg>',
@@ -410,6 +450,7 @@ const icons = {
   edit: '<svg viewBox="0 0 24 24"><path d="m4 16-1 5 5-1L19 9l-4-4z"></path><path d="m13.5 6.5 4 4"></path></svg>',
   move: '<svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"></path><path d="m8 7 4-4 4 4M8 17l4 4 4-4M7 8l-4 4 4 4M17 8l4 4-4 4"></path></svg>',
   restore: '<svg viewBox="0 0 24 24"><path d="M4 8v6h6"></path><path d="M5.5 15A8 8 0 1 0 7 6.5L4 9"></path></svg>',
+  bolt: '<svg viewBox="0 0 24 24"><path d="m13 2-8 12h7l-1 8 8-12h-7z"></path></svg>',
 };
 
 const params = new URLSearchParams(location.search);
@@ -426,7 +467,7 @@ const tabButtons = { sync: $("syncTab"), clipboard: $("clipTab"), files: $("file
 const clipboardState = { pinned: null, recent: null, loadedAt: 0, loading: false };
 const fileState = {
   folders: [], location: "root", result: null, loadedAt: 0, cache: new Map(), selected: new Set(), sort: "newest",
-  search: "", loading: false, storage: null, activeView: "browse"
+  search: "", loading: false, loadingMore: false, storage: null, activeView: "browse"
 };
 let activeTab = "sync";
 let editorSubmit = null;
@@ -472,6 +513,7 @@ function setPaired(paired) {
   $("pairState").textContent = paired ? "Paired" : "Not paired";
   $("pairPanel").classList.toggle("hidden", paired);
   $("appPanel").classList.toggle("hidden", !paired);
+  $("quickActionsBtn").classList.toggle("hidden", !paired);
 }
 
 async function checkPairing() {
@@ -595,6 +637,33 @@ function folderDescendantIds(id) {
   return ids;
 }
 
+function workspaceCacheKey() { return `${fileState.activeView}:${fileState.location}:${fileState.sort}`; }
+function restoreWorkspaceCache() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(WORKSPACE_CACHE_KEY) || "null");
+    if (!saved || Date.now() - saved.savedAt > WORKSPACE_CACHE_MAX_MS) return localStorage.removeItem(WORKSPACE_CACHE_KEY);
+    fileState.cache.set(saved.key, { data: saved.data, loadedAt: saved.savedAt });
+    if (saved.data?.folders) fileState.folders = saved.data.folders;
+  } catch { localStorage.removeItem(WORKSPACE_CACHE_KEY); }
+}
+function persistWorkspaceCache(key, data) {
+  try { localStorage.setItem(WORKSPACE_CACHE_KEY, JSON.stringify({ key, data, savedAt: Date.now() })); } catch {}
+}
+function applyStorage(data) {
+  if (!data) return;
+  fileState.storage = data;
+  const ratio = Math.max(0, Math.min(1, Number(data.usage_ratio || 0)));
+  $("storageFill").style.width = (ratio * 100).toFixed(2) + "%";
+  $("storageFill").className = "storage-fill" + (ratio >= .85 ? " danger" : ratio >= .7 ? " warn" : "");
+  $("storageText").textContent = `${formatSize(data.used_bytes)} / ${formatSize(data.quota_bytes)}`;
+  if (ratio >= .95) setStatus("Storage is almost full.");
+}
+function normalizeWorkspace(data) {
+  if (data.folders) fileState.folders = data.folders;
+  applyStorage(data.storage);
+  return { ...data, folders: data.children || [] };
+}
+
 function renderTreeLevel(parentId = null, depth = 0) {
   return folderChildren(parentId).map((folder) => {
     const active = fileState.location === folder.id ? " active" : "";
@@ -674,6 +743,8 @@ function bindBrowserActions() {
       buttons[2].onclick = () => confirmAction("Move folder to Trash?", "Every file and subfolder inside it moves with it.", () => folderAction(folder, "trash"), "Move");
     }
   });
+  const loadMore = $("browserList").querySelector("[data-load-more]");
+  if (loadMore) loadMore.onclick = loadMoreFiles;
 }
 
 function renderBrowser() {
@@ -687,7 +758,8 @@ function renderBrowser() {
     ...folders.map((folder) => folderRow(folder, trashMode, folder.inbox)),
     ...(result.files || []).map((file) => fileRow(file, trashMode))
   ];
-  list.innerHTML = rows.length ? rows.join("") : emptyState(trashMode ? "trash" : "folder", trashMode ? "Trash is empty" : "Nothing here", trashMode ? "Deleted items stay for 7 days." : "Upload a file or create a folder.");
+  const more = result.has_more ? `<div class="load-more"><button class="secondary" data-load-more ${fileState.loadingMore ? "disabled" : ""}>${fileState.loadingMore ? "Loading" : "Load more"}</button></div>` : "";
+  list.innerHTML = rows.length ? rows.join("") + more : emptyState(trashMode ? "trash" : "folder", trashMode ? "Trash is empty" : "Nothing here", trashMode ? "Deleted items stay for 7 days." : "Upload a file or create a folder.");
   bindBrowserActions();
   renderSelectionBar();
 }
@@ -711,31 +783,9 @@ function renderSelectionBar() {
   });
 }
 
-async function loadFolderTree(force = false) {
-  if (!force && fileState.folders.length) return;
-  const data = await apiJson("/api/file-folders/tree");
-  fileState.folders = data.folders || [];
-  renderFolderTree();
-}
-
-async function loadStorage() {
-  try {
-    const data = await apiJson("/api/files/storage");
-    fileState.storage = data;
-    const ratio = Math.max(0, Math.min(1, Number(data.usage_ratio || 0)));
-    $("storageFill").style.width = (ratio * 100).toFixed(2) + "%";
-    $("storageFill").className = "storage-fill" + (ratio >= .85 ? " danger" : ratio >= .7 ? " warn" : "");
-    $("storageText").textContent = `${formatSize(data.used_bytes)} / ${formatSize(data.quota_bytes)}`;
-    if (ratio >= .95) setStatus("Storage is almost full.");
-  } catch {}
-}
-
 async function loadFileManager(force = false) {
-  try {
-    await loadFolderTree(force);
-    await navigateFiles(fileState.location, force);
-    loadStorage();
-  } catch (error) { setStatus("Files: " + error.message); }
+  try { await navigateFiles(fileState.location, force); }
+  catch (error) { setStatus("Files: " + error.message); }
 }
 
 async function navigateFiles(location, force = false) {
@@ -745,22 +795,42 @@ async function navigateFiles(location, force = false) {
   $("fileSearch").value = "";
   fileState.selected.clear();
   renderFolderTree(); renderBreadcrumb();
-  const cacheKey = `${fileState.activeView}:${fileState.location}:${fileState.sort}`;
+  const cacheKey = workspaceCacheKey();
   const cached = fileState.cache.get(cacheKey);
-  if (!force && cached && Date.now() - cached.loadedAt < CACHE_MS) {
-    fileState.result = cached.data; fileState.loading = false; renderBrowser(); return;
+  if (!force && cached) {
+    fileState.result = normalizeWorkspace(cached.data); fileState.loading = false;
+    renderFolderTree(); renderBreadcrumb(); renderBrowser();
+    if (Date.now() - cached.loadedAt < CACHE_MS) return;
   }
   fileState.loading = true;
   if (!cached) { fileState.result = null; renderBrowser(); }
   try {
-    const path = fileState.activeView === "trash" ? "/api/files/trash" : `/api/files/browse?folder_id=${encodeURIComponent(fileState.location)}&sort=${encodeURIComponent(fileState.sort)}&limit=100`;
+    const path = `/api/files/workspace?folder_id=${encodeURIComponent(fileState.location)}&sort=${encodeURIComponent(fileState.sort)}&limit=30&offset=0`;
     const data = await apiJson(path);
-    fileState.result = data;
+    fileState.result = normalizeWorkspace(data);
     fileState.loadedAt = Date.now();
     fileState.cache.set(cacheKey, { data, loadedAt: Date.now() });
-    renderBrowser();
+    persistWorkspaceCache(cacheKey, data);
+    renderFolderTree(); renderBreadcrumb(); renderBrowser();
   } catch (error) { setStatus(error.message); }
   finally { fileState.loading = false; }
+}
+
+async function loadMoreFiles() {
+  if (fileState.loadingMore || !fileState.result?.has_more) return;
+  fileState.loadingMore = true; renderBrowser();
+  try {
+    const offset = Number(fileState.result.next_offset || 0);
+    const data = await apiJson(`/api/files/workspace?folder_id=${encodeURIComponent(fileState.location)}&sort=${encodeURIComponent(fileState.sort)}&limit=30&offset=${offset}`);
+    const currentFiles = fileState.result.files || [];
+    const normalized = normalizeWorkspace(data);
+    fileState.result = { ...normalized, files: [...currentFiles, ...(normalized.files || [])] };
+    const cacheData = { ...data, files: fileState.result.files };
+    const key = workspaceCacheKey();
+    fileState.cache.set(key, { data: cacheData, loadedAt: Date.now() });
+    persistWorkspaceCache(key, cacheData);
+  } catch (error) { setStatus(error.message); }
+  finally { fileState.loadingMore = false; renderBrowser(); }
 }
 
 let searchTimer = null;
@@ -891,15 +961,15 @@ async function uploadManagerFile(file) {
 
 async function refreshFiles(message = "Refreshed.") {
   fileState.cache.clear();
-  await loadFolderTree(true);
   await navigateFiles(fileState.location, true);
-  loadStorage(); notifyRealtime("manager", { entity: "files" }); setStatus(message);
+  notifyRealtime("manager", { entity: "files" }); setStatus(message);
 }
 
 $("refreshClipboardBtn").innerHTML = icons.refresh;
 $("newFolderBtn").innerHTML = icons.folderPlus;
 $("uploadFolderBtn").innerHTML = icons.upload;
 $("refreshFilesBtn").innerHTML = icons.refresh;
+$("quickActionsBtn").innerHTML = icons.bolt;
 tabButtons.sync.onclick = () => showView("sync"); tabButtons.clipboard.onclick = () => showView("clipboard"); tabButtons.files.onclick = () => showView("files");
 $("refreshClipboardBtn").onclick = () => loadClipboard(true);
 $("refreshFilesBtn").onclick = () => refreshFiles();
@@ -929,6 +999,39 @@ $("confirmAccept").onclick = async () => {
   try { await confirmSubmit(); $("confirmDialog").close(); }
   finally { $("confirmAccept").disabled = false; }
 };
+
+function resetQuickDialog() {
+  $("quickSetupEmpty").classList.remove("hidden");
+  $("quickSetupResult").classList.add("hidden");
+  $("quickToken").value = "";
+  $("quickPushUrl").value = "";
+  $("quickPullUrl").value = "";
+}
+
+$("quickActionsBtn").onclick = () => { resetQuickDialog(); $("quickDialog").showModal(); };
+$("quickCloseBtn").onclick = () => { resetQuickDialog(); $("quickDialog").close(); };
+$("quickCreateBtn").onclick = async () => {
+  $("quickCreateBtn").disabled = true;
+  try {
+    const data = await apiJson("/api/quick-actions/setup", { method: "POST" });
+    $("quickToken").value = "Bearer " + data.token;
+    $("quickPushUrl").value = data.push_url;
+    $("quickPullUrl").value = data.pull_url;
+    $("quickSetupEmpty").classList.add("hidden");
+    $("quickSetupResult").classList.remove("hidden");
+    setStatus("Quick Actions key created.");
+  } catch (error) { setStatus(error.message); }
+  finally { $("quickCreateBtn").disabled = false; }
+};
+$("quickRevokeBtn").onclick = () => confirmAction("Revoke Quick Actions?", "The Push and Pull icons will stop working until you create a new key.", async () => {
+  await apiJson("/api/quick-actions/setup", { method: "DELETE" });
+  resetQuickDialog(); $("quickDialog").close(); setStatus("Quick Actions revoked.");
+}, "Revoke");
+$("quickDialog").querySelectorAll("[data-copy]").forEach((button) => button.onclick = async () => {
+  const field = $(button.dataset.copy);
+  try { await navigator.clipboard.writeText(field.value); setStatus("Copied."); }
+  catch { field.select(); setStatus("Select and copy the value."); }
+});
 
 $("pairBtn").onclick = async () => {
   try { await claimPairing(pairCodeInput.value.trim(), "iPhone", "ios"); setStatus("Paired."); }
@@ -960,7 +1063,7 @@ $("fileBtn").onclick = async () => {
   } catch (error) { setStatus(error.message); }
 };
 $("resetBtn").onclick = () => confirmAction("Forget pairing?", "This browser must be paired again from Windows.", () => {
-  localStorage.removeItem("cloudbridge_token"); setPaired(false); setStatus("Pairing removed.");
+  localStorage.removeItem("cloudbridge_token"); localStorage.removeItem(WORKSPACE_CACHE_KEY); setPaired(false); setStatus("Pairing removed.");
 }, "Forget");
 
 document.addEventListener("visibilitychange", () => {
@@ -969,7 +1072,12 @@ document.addEventListener("visibilitychange", () => {
   if (activeTab === "clipboard" && Date.now() - clipboardState.loadedAt > CACHE_MS) loadClipboard(true);
 });
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
-autoClaimIfRequested().then((claimed) => { if (!claimed) checkPairing(); }).catch(() => setPaired(false));
+restoreWorkspaceCache();
+if (token()) setPaired(true);
+autoClaimIfRequested().then((claimed) => {
+  if (!claimed && token()) checkPairing();
+  else if (!claimed) setPaired(false);
+}).catch(() => { if (!token()) setPaired(false); });
 </script>
 </body>
 </html>

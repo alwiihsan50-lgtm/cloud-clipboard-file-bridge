@@ -25,6 +25,7 @@ const CLEANUP_INTERVAL_SECONDS = Number(
 const STORAGE_QUOTA_BYTES = Number(
   Deno.env.get("CLOUD_BRIDGE_STORAGE_QUOTA_BYTES") ?? "1073741824",
 );
+const QUICK_CLIPBOARD_MAX_BYTES = 1024 * 1024;
 const PUBLIC_BASE_URL = Deno.env.get("CLOUD_BRIDGE_PUBLIC_URL") ??
   `https://${PROJECT_REF}.supabase.co/functions/v1/cloudbridge`;
 
@@ -39,6 +40,8 @@ type AuthContext = {
   kind: "admin" | "device";
   token: string;
   device_id?: string;
+  access_scope: "full" | "clipboard_quick";
+  parent_device_id?: string | null;
 };
 type JsonRecord = Record<string, unknown>;
 type FolderRow = {
@@ -148,17 +151,24 @@ async function requireAuth(req: Request): Promise<AuthContext | Response> {
   )
     .select("label").eq("token_hash", tokenHash).eq("revoked", false).limit(1);
   if (adminError) return json({ detail: adminError.message }, 500);
-  if (admins?.length) return { kind: "admin", token };
+  if (admins?.length) return { kind: "admin", token, access_scope: "full" };
 
   const { data: devices, error: deviceError } = await supabase.from(
     "cloudbridge_devices",
   )
-    .select("device_id").eq("token_hash", tokenHash).eq("revoked", false).limit(
-      1,
-    );
+    .select("device_id,access_scope,parent_device_id").eq(
+      "token_hash",
+      tokenHash,
+    ).eq("revoked", false).limit(1);
   if (deviceError) return json({ detail: deviceError.message }, 500);
   if (devices?.length) {
-    return { kind: "device", token, device_id: devices[0].device_id };
+    return {
+      kind: "device",
+      token,
+      device_id: devices[0].device_id,
+      access_scope: devices[0].access_scope ?? "full",
+      parent_device_id: devices[0].parent_device_id,
+    };
   }
   return json({ detail: "Invalid token" }, 401);
 }
@@ -194,6 +204,56 @@ function clampLimit(value: string | null): number {
   const parsed = Number(value ?? "50");
   if (!Number.isFinite(parsed)) return 50;
   return Math.max(1, Math.min(100, Math.trunc(parsed)));
+}
+
+function workspaceLimit(value: string | null): number {
+  const parsed = Number(value ?? "30");
+  if (!Number.isFinite(parsed)) return 30;
+  return Math.max(1, Math.min(50, Math.trunc(parsed)));
+}
+
+function workspaceOffset(value: string | null): number {
+  const parsed = Number(value ?? "0");
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.max(0, Math.min(10000, Math.trunc(parsed)));
+}
+
+async function storageUsage(): Promise<number> {
+  const { data, error } = await supabase.rpc("cloudbridge_storage_usage");
+  if (error) throw error;
+  return Number(data ?? 0);
+}
+
+function publishableKey(): string | null {
+  const keys = Deno.env.get("SUPABASE_PUBLISHABLE_KEYS");
+  if (keys) {
+    try {
+      return JSON.parse(keys).default ?? null;
+    } catch {
+      // Fall through to the legacy anon key.
+    }
+  }
+  return Deno.env.get("SUPABASE_ANON_KEY") ?? null;
+}
+
+async function broadcastChange(kind: string, item: JsonRecord): Promise<void> {
+  const key = publishableKey();
+  if (!key) return;
+  try {
+    await fetch(`${Deno.env.get("SUPABASE_URL")}/realtime/v1/api/broadcast`, {
+      method: "POST",
+      headers: { apikey: key, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [{
+          topic: "cloudbridge",
+          event: "cloudbridge_change",
+          payload: { kind, ...item },
+        }],
+      }),
+    });
+  } catch {
+    // Polling remains the fallback when Realtime is unavailable.
+  }
 }
 
 function pinOwner(auth: AuthContext): string {
@@ -481,7 +541,102 @@ Deno.serve(async (req: Request) => {
         ok: true,
         auth: auth.kind,
         device_id: auth.device_id ?? null,
+        access_scope: auth.access_scope,
       });
+    }
+
+    if (path === "/api/quick-actions/setup") {
+      if (auth.kind !== "device" || auth.access_scope !== "full") {
+        return json({ detail: "Full device token required" }, 403);
+      }
+      const parentDeviceId = auth.device_id!;
+      if (req.method === "POST") {
+        const token = randomToken(32);
+        const quickDeviceId = `${parentDeviceId}:quick`;
+        const { error } = await supabase.from("cloudbridge_devices").upsert({
+          device_id: quickDeviceId,
+          label: "iPhone Quick Actions",
+          platform: "ios-shortcuts",
+          token_hash: await sha256(token),
+          revoked: false,
+          access_scope: "clipboard_quick",
+          parent_device_id: parentDeviceId,
+          last_seen_at: null,
+        }, { onConflict: "device_id" });
+        if (error) return json({ detail: error.message }, 500);
+        return json({
+          ok: true,
+          device_id: quickDeviceId,
+          token,
+          push_url: `${PUBLIC_BASE_URL}/api/quick/clipboard/push`,
+          pull_url: `${PUBLIC_BASE_URL}/api/quick/clipboard/pull`,
+        });
+      }
+      if (req.method === "DELETE") {
+        const { error } = await supabase.from("cloudbridge_devices").update({
+          revoked: true,
+        }).eq("parent_device_id", parentDeviceId).eq(
+          "access_scope",
+          "clipboard_quick",
+        );
+        if (error) return json({ detail: error.message }, 500);
+        return json({ ok: true });
+      }
+    }
+
+    if (req.method === "POST" && path === "/api/quick/clipboard/push") {
+      if (auth.access_scope !== "clipboard_quick" || !auth.device_id) {
+        return json({ detail: "Quick Actions token required" }, 403);
+      }
+      const body = await req.json();
+      const content = String(body.content ?? "");
+      const byteLength = new TextEncoder().encode(content).byteLength;
+      if (!content.length) return json({ detail: "Clipboard is empty" }, 422);
+      if (byteLength > QUICK_CLIPBOARD_MAX_BYTES) {
+        return json({ detail: "Clipboard exceeds 1 MB" }, 413);
+      }
+      const { data, error } = await supabase.from("cloudbridge_clipboard")
+        .insert({
+          content,
+          source: "ios-shortcut",
+          device_id: auth.device_id,
+        }).select("*").single();
+      if (error) return json({ detail: error.message }, 500);
+      await Promise.all([
+        maybeCleanup(),
+        broadcastChange("clipboard", {
+          id: data.id,
+          device_id: auth.device_id,
+          source: "ios-shortcut",
+        }),
+        supabase.from("cloudbridge_devices").update({ last_seen_at: nowIso() })
+          .eq("device_id", auth.device_id),
+      ]);
+      return json({ ok: true, message: "Sent" });
+    }
+
+    if (req.method === "GET" && path === "/api/quick/clipboard/pull") {
+      if (auth.access_scope !== "clipboard_quick" || !auth.device_id) {
+        return json({ detail: "Quick Actions token required" }, 403);
+      }
+      const { data, error } = await supabase.from("cloudbridge_clipboard")
+        .select("content").neq("device_id", auth.device_id)
+        .order("version", { ascending: false }).limit(1);
+      if (error) return json({ detail: error.message }, 500);
+      await supabase.from("cloudbridge_devices").update({
+        last_seen_at: nowIso(),
+      }).eq("device_id", auth.device_id);
+      if (!data?.length) {
+        return new Response(null, { status: 204, headers: corsHeaders });
+      }
+      return text(String(data[0].content));
+    }
+
+    if (auth.access_scope === "clipboard_quick") {
+      return json(
+        { detail: "Quick Actions token cannot access this endpoint" },
+        403,
+      );
     }
 
     if (req.method === "POST" && path === "/api/cleanup") {
@@ -823,6 +978,108 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true, items: (data ?? []).map(publicFileRecord) });
     }
 
+    if (req.method === "GET" && path === "/api/files/workspace") {
+      const location = url.searchParams.get("folder_id") ?? "root";
+      const limit = workspaceLimit(url.searchParams.get("limit"));
+      const offset = workspaceOffset(url.searchParams.get("offset"));
+      const [folders, usedBytes] = await Promise.all([
+        allFolders(),
+        storageUsage(),
+      ]);
+      const activeFolders = folders.filter((folder) => !folder.trashed_at);
+      const storage = {
+        used_bytes: usedBytes,
+        quota_bytes: STORAGE_QUOTA_BYTES,
+        usage_ratio: STORAGE_QUOTA_BYTES ? usedBytes / STORAGE_QUOTA_BYTES : 0,
+      };
+
+      if (location === "root") {
+        const { count, error } = await supabase.from("cloudbridge_files")
+          .select("id", { count: "exact", head: true })
+          .is("folder_id", null).is("trashed_at", null);
+        if (error) return json({ detail: error.message }, 500);
+        return json({
+          ok: true,
+          location,
+          folders: activeFolders,
+          children: activeFolders.filter((folder) => !folder.parent_id),
+          files: [],
+          inbox_count: count ?? 0,
+          storage,
+          has_more: false,
+          next_offset: null,
+        });
+      }
+
+      if (location === "trash") {
+        const trashedFolders = folders.filter((folder) => folder.trashed_at);
+        const trashedIds = new Set(trashedFolders.map((folder) => folder.id));
+        const roots = trashedFolders.filter((folder) =>
+          !folder.parent_id || !trashedIds.has(folder.parent_id)
+        );
+        const { data, error } = await supabase.from("cloudbridge_files")
+          .select("*").not("trashed_at", "is", null)
+          .order("trashed_at", { ascending: false }).limit(500);
+        if (error) return json({ detail: error.message }, 500);
+        const standalone = ((data ?? []) as FileRow[]).filter((file) =>
+          !file.folder_id || !trashedIds.has(file.folder_id)
+        );
+        const page = standalone.slice(offset, offset + limit);
+        return json({
+          ok: true,
+          location,
+          folders,
+          children: roots,
+          files: page.map(publicFileRecord),
+          storage,
+          retention_seconds: TRASH_RETENTION_SECONDS,
+          has_more: offset + page.length < standalone.length,
+          next_offset: offset + page.length < standalone.length
+            ? offset + page.length
+            : null,
+        });
+      }
+
+      const folderId = location === "inbox" ? null : location;
+      if (folderId && !activeFolders.some((folder) => folder.id === folderId)) {
+        return json({ detail: "Folder not found" }, 404);
+      }
+      const sortMap: Record<string, string> = {
+        name: "filename",
+        newest: "uploaded_at",
+        oldest: "uploaded_at",
+        size: "size",
+      };
+      const sort = url.searchParams.get("sort") ?? "newest";
+      const column = sortMap[sort] ?? "uploaded_at";
+      const ascending = sort === "oldest" || sort === "name";
+      let query = supabase.from("cloudbridge_files").select("*", {
+        count: "exact",
+      }).is("trashed_at", null).order(column, { ascending }).range(
+        offset,
+        offset + limit - 1,
+      );
+      query = folderId
+        ? query.eq("folder_id", folderId)
+        : query.is("folder_id", null);
+      const { data, count, error } = await query;
+      if (error) return json({ detail: error.message }, 500);
+      const files = (data ?? []).map(publicFileRecord);
+      const hasMore = offset + files.length < (count ?? 0);
+      return json({
+        ok: true,
+        location,
+        folders: activeFolders,
+        children: folderId
+          ? activeFolders.filter((folder) => folder.parent_id === folderId)
+          : [],
+        files,
+        storage,
+        has_more: hasMore,
+        next_offset: hasMore ? offset + files.length : null,
+      });
+    }
+
     if (req.method === "GET" && path === "/api/files/browse") {
       const location = url.searchParams.get("folder_id") ?? "root";
       const limit = clampLimit(url.searchParams.get("limit"));
@@ -923,15 +1180,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (req.method === "GET" && path === "/api/files/storage") {
-      const { data, error } = await supabase.from("cloudbridge_files").select(
-        "size",
-      );
-      if (error) return json({ detail: error.message }, 500);
-      const used = (data ?? []).reduce(
-        (total: number, row: { size: number | null }) =>
-          total + Number(row.size || 0),
-        0,
-      );
+      const used = await storageUsage();
       return json({
         ok: true,
         used_bytes: used,

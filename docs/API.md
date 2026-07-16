@@ -357,6 +357,19 @@ Returns top-level trashed folders and standalone trashed files. Nested contents 
 
 Returns `used_bytes`, the configured `quota_bytes`, and `usage_ratio` for the manager storage meter.
 
+### `GET /api/files/workspace`
+
+Returns the folder tree, children and files for one location, Inbox count, pagination state, and aggregate storage usage in one response.
+
+Query params:
+
+- `folder_id`: `root`, `inbox`, `trash`, or a folder UUID.
+- `sort`: `newest`, `oldest`, `name`, or `size`.
+- `limit`: default `30`, max `50`.
+- `offset`: default `0`, max `10000`.
+
+The response includes `has_more` and `next_offset`. Existing browse, tree, trash, and storage endpoints remain available for older clients.
+
 ### `PATCH /api/files/{id}`
 
 Renames an active file. The Storage object path remains private and is never returned.
@@ -374,6 +387,26 @@ Applies one action to 1-100 file IDs. JSON fields:
 ```
 
 Supported actions: `move`, `pin`, `unpin`, `trash`, `restore`, and `delete_permanently`. Permanent deletion is accepted only for trashed files.
+
+## Quick Actions
+
+### `POST /api/quick-actions/setup`
+
+Requires a full device token. Creates or rotates one child token with scope `clipboard_quick`. The plaintext token is returned once with `push_url` and `pull_url`.
+
+### `DELETE /api/quick-actions/setup`
+
+Requires the parent full device token and revokes its Quick Actions token.
+
+### `POST /api/quick/clipboard/push`
+
+Requires a `clipboard_quick` token. JSON body: `{ "content": "text" }`. Empty content is rejected and the maximum UTF-8 payload is 1 MB. The server records source `ios-shortcut` and broadcasts a Realtime clipboard signal.
+
+### `GET /api/quick/clipboard/pull`
+
+Requires a `clipboard_quick` token. Returns the latest clipboard content from another device as `text/plain`, or HTTP `204` when none exists.
+
+Quick tokens may call only these clipboard endpoints and `/api/me`. Every other protected endpoint returns `403`.
 
 ## `POST /api/cleanup`
 
