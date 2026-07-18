@@ -22,6 +22,8 @@ const CLEANUP_INTERVAL_SECONDS = Number(
 const QUICK_CLIPBOARD_MAX_BYTES = 1024 * 1024;
 const PUBLIC_BASE_URL = Deno.env.get("CLOUD_BRIDGE_PUBLIC_URL") ??
   `https://${PROJECT_REF}.supabase.co/functions/v1/cloudbridge`;
+const APP_URL = (Deno.env.get("CLOUD_BRIDGE_APP_URL") ??
+  "https://alwiihsan50-lgtm.github.io/claudbridge/app/").replace(/\/$/, "");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -537,7 +539,7 @@ Deno.serve(async (req: Request) => {
       return json({
         ok: true,
         code,
-        pairing_url: `${PUBLIC_BASE_URL}/app?code=${encodeURIComponent(code)}`,
+        pairing_url: `${APP_URL}/?code=${encodeURIComponent(code)}`,
         expires_at: data.expires_at,
       });
     }

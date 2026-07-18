@@ -11,7 +11,7 @@ https://ajlkfzgpheegmwsnspxw.supabase.co/functions/v1/cloudbridge
 URL app iPhone:
 
 ```text
-https://alwiihsan50-lgtm.github.io/cloud-clipboard-file-bridge/app/
+https://alwiihsan50-lgtm.github.io/claudbridge/app/
 ```
 
 ## Komponen
@@ -105,7 +105,7 @@ Menu tray `Open CloudBridge Manager` membuat pairing code singkat dan otomatis m
 
 1. Jalankan Windows Agent.
 2. Dari tray CloudBridge, pilih menu untuk membuat pairing link.
-3. Buka link `https://alwiihsan50-lgtm.github.io/cloud-clipboard-file-bridge/app/?code=...` di iPhone.
+3. Buka link `https://alwiihsan50-lgtm.github.io/claudbridge/app/?code=...` di iPhone.
 4. Tap `Pair iPhone`.
 5. Di Safari iPhone, gunakan `Add to Home Screen` supaya CloudBridge tampil seperti app.
 
@@ -146,7 +146,7 @@ PWA menampilkan UI langsung dari token lokal dan memvalidasi pairing di backgrou
 Di Windows tray, menu `Open CloudBridge Manager` membuka PWA manager:
 
 ```text
-https://alwiihsan50-lgtm.github.io/cloud-clipboard-file-bridge/app/
+https://alwiihsan50-lgtm.github.io/claudbridge/app/
 ```
 
 ## Catatan PWA

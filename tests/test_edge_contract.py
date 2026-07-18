@@ -76,6 +76,15 @@ def test_all_clipboard_and_file_items_can_be_edited():
     assert "if (!pinned)" not in PWA[PWA.index("function openClipboardEditor"):PWA.index("function fileMeta")]
 
 
+def test_pairing_and_windows_manager_use_current_pages_url():
+    current_url = "https://alwiihsan50-lgtm.github.io/claudbridge/app/"
+    old_path = "github.io/cloud-clipboard-file-bridge/"
+    assert current_url in FUNCTION
+    assert "pairing_url: `${APP_URL}/?code=" in FUNCTION
+    assert old_path not in FUNCTION
+    assert old_path not in PWA
+
+
 def test_quick_actions_are_scoped_and_revocable():
     for route in (
         "/api/quick-actions/setup",

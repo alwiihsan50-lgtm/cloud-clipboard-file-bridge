@@ -91,7 +91,7 @@ Response:
 The Windows tray app uses `code` to build the iPhone app URL:
 
 ```text
-https://alwiihsan50-lgtm.github.io/cloud-clipboard-file-bridge/app/?code=short-lived-secret
+https://alwiihsan50-lgtm.github.io/claudbridge/app/?code=short-lived-secret
 ```
 
 ## `POST /api/pairing/claim`

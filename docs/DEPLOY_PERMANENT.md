@@ -11,7 +11,7 @@ https://ajlkfzgpheegmwsnspxw.supabase.co/functions/v1/cloudbridge
 URL app iPhone:
 
 ```text
-https://alwiihsan50-lgtm.github.io/cloud-clipboard-file-bridge/app/
+https://alwiihsan50-lgtm.github.io/claudbridge/app/
 ```
 
 ## 1. Supabase
@@ -76,7 +76,7 @@ CLOUD_BRIDGE_TOKEN=<admin-token>
 CLOUD_BRIDGE_DEVICE_ID=windows-CUKER
 POLL_INTERVAL_MS=5000
 DOWNLOAD_DIR=D:\Cloud Bridge
-CLOUD_BRIDGE_APP_URL=https://alwiihsan50-lgtm.github.io/cloud-clipboard-file-bridge/app/
+CLOUD_BRIDGE_APP_URL=https://alwiihsan50-lgtm.github.io/claudbridge/app/
 CLOUD_BRIDGE_REALTIME_ENABLED=true
 CLOUD_BRIDGE_SUPABASE_URL=https://ajlkfzgpheegmwsnspxw.supabase.co
 CLOUD_BRIDGE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_c4VLFI_5vVD2FokNBuX1iw_44NApC27

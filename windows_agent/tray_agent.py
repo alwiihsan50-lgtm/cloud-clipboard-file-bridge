@@ -19,7 +19,7 @@ import agent
 
 APP_URL = os.getenv(
     "CLOUD_BRIDGE_APP_URL",
-    "https://alwiihsan50-lgtm.github.io/cloud-clipboard-file-bridge/app/",
+    "https://alwiihsan50-lgtm.github.io/claudbridge/app/",
 ).rstrip("/")
 stop_event = threading.Event()
 status_lock = threading.Lock()
