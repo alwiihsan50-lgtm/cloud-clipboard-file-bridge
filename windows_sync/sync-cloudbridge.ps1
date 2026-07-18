@@ -1,5 +1,6 @@
 param(
-    [string]$LocalPath = 'D:\Cloud Bridge'
+    [string]$LocalPath = 'D:\Cloud Bridge',
+    [string]$DeviceId = "windows-$env:COMPUTERNAME"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -38,6 +39,7 @@ try {
         --compare size,checksum `
         --conflict-resolve larger `
         --conflict-loser num `
+        --header "X-CloudBridge-Device: $DeviceId" `
         --create-empty-src-dirs `
         --max-lock 2m `
         --log-file $logPath `

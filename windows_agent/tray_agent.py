@@ -56,6 +56,16 @@ def make_icon() -> Image.Image:
 
 def sync_loop() -> None:
     state = agent.SyncState()
+    folder_sync = agent.FolderSyncCoordinator(
+        agent.DOWNLOAD_DIR,
+        agent.default_sync_script(),
+        agent.DEVICE_ID,
+        agent.log,
+        agent.FOLDER_SYNC_DEBOUNCE_MS / 1000,
+        agent.FOLDER_SYNC_STABLE_MS / 1000,
+    )
+    if agent.FOLDER_SYNC_ENABLED:
+        folder_sync.start()
     local_interval = max(agent.LOCAL_CLIPBOARD_INTERVAL_MS, 500) / 1000
     fallback_interval = max(agent.FALLBACK_POLL_INTERVAL_MS, 30000) / 1000
     health_interval = max(agent.HEALTH_INTERVAL_MS, 30000) / 1000
@@ -75,7 +85,13 @@ def sync_loop() -> None:
     if agent.realtime_available():
         realtime_thread = threading.Thread(
             target=agent.run_realtime_listener,
-            args=(state, stop_event, on_realtime_status, on_realtime_files),
+            args=(
+                state,
+                stop_event,
+                on_realtime_status,
+                on_realtime_files,
+                folder_sync.trigger_remote,
+            ),
             daemon=True,
         )
         realtime_thread.start()
@@ -101,6 +117,8 @@ def sync_loop() -> None:
         except Exception as exc:
             set_status(connected=False, last_error=str(exc)[:80])
         stop_event.wait(local_interval)
+
+    folder_sync.stop()
 
 
 def open_downloads() -> None:

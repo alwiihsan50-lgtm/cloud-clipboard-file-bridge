@@ -31,7 +31,7 @@ const APP_URL = (Deno.env.get("CLOUD_BRIDGE_APP_URL") ??
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, x-cloudbridge-device, apikey, content-type",
   "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
 };
 
@@ -173,6 +173,23 @@ function webdavAuth(req: Request): boolean {
   } catch {
     return false;
   }
+}
+
+function webdavDeviceId(req: Request): string {
+  return (req.headers.get("X-CloudBridge-Device") ?? "ios-webdav")
+    .replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 100) || "ios-webdav";
+}
+
+async function broadcastWebdavChange(
+  req: Request,
+  operation: string,
+  storagePath: string,
+): Promise<void> {
+  await broadcastChange("folder_sync", {
+    operation,
+    path: storagePath,
+    device_id: webdavDeviceId(req),
+  });
 }
 
 function webdavUnauthorized(): Response {
@@ -325,6 +342,7 @@ async function handleWebdav(req: Request, path: string): Promise<Response> {
       upsert: true,
     });
     if (error) return new Response(error.message, { status: 500 });
+    await broadcastWebdavChange(req, "put", storagePath);
     return new Response(null, { status: 201, headers: commonHeaders });
   }
 
@@ -337,6 +355,7 @@ async function handleWebdav(req: Request, path: string): Promise<Response> {
       { contentType: "application/octet-stream", upsert: true },
     );
     if (error) return new Response(error.message, { status: 500 });
+    await broadcastWebdavChange(req, "mkdir", storagePath);
     return new Response(null, { status: 201, headers: commonHeaders });
   }
 
@@ -348,6 +367,7 @@ async function handleWebdav(req: Request, path: string): Promise<Response> {
       const { error } = await supabase.storage.from(SYNC_BUCKET).remove(paths.slice(index, index + 1000));
       if (error) return new Response(error.message, { status: 500 });
     }
+    await broadcastWebdavChange(req, "delete", storagePath);
     return new Response(null, { status: 204, headers: commonHeaders });
   }
 
@@ -366,6 +386,11 @@ async function handleWebdav(req: Request, path: string): Promise<Response> {
       : supabase.storage.from(SYNC_BUCKET).copy(storagePath, destinationPath);
     const { error } = await operation;
     if (error) return new Response(error.message, { status: 500 });
+    await broadcastWebdavChange(
+      req,
+      req.method === "MOVE" ? "move" : "copy",
+      destinationPath,
+    );
     return new Response(null, { status: 201, headers: commonHeaders });
   }
 

@@ -7,7 +7,8 @@ mengakses bucket sinkronisasi dan tidak dapat membaca bucket transfer aplikasi.
 Runtime Windows:
 
 - `rclone` backend WebDAV
-- task `CloudBridge Folder Sync`, berjalan setiap satu menit
+- Windows Agent memantau perubahan lokal dan event Supabase Realtime
+- task `CloudBridge Folder Sync` berjalan setiap 15 menit sebagai fallback
 - config dan log di `%LOCALAPPDATA%\CloudBridge\Sync`
 
 Endpoint iPhone/File Provider:
@@ -21,3 +22,5 @@ aktifkan lokasinya dari aplikasi Files. Username dan password instalasi lokal
 tersimpan di `%LOCALAPPDATA%\CloudBridge\Sync\iPhone-setup.txt` dengan akses
 hanya untuk akun Windows saat ini.
 
+Perubahan normal mulai disinkronkan setelah debounce sekitar tiga detik. File
+yang masih ditulis ditunggu sampai ukuran dan waktu modifikasinya stabil.

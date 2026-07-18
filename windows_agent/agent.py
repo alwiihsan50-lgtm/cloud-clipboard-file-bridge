@@ -15,6 +15,7 @@ from typing import Any, Callable
 import pyperclip
 import requests
 from dotenv import load_dotenv
+from folder_sync import FolderSyncCoordinator, default_sync_script
 
 try:
     from supabase import acreate_client
@@ -42,6 +43,11 @@ REALTIME_ENABLED = os.getenv("CLOUD_BRIDGE_REALTIME_ENABLED", "true").lower() in
 FALLBACK_POLL_INTERVAL_MS = int(os.getenv("CLOUD_BRIDGE_FALLBACK_POLL_INTERVAL_MS", "300000"))
 LOCAL_CLIPBOARD_INTERVAL_MS = int(os.getenv("CLOUD_BRIDGE_LOCAL_CLIPBOARD_INTERVAL_MS", str(POLL_INTERVAL_MS)))
 HEALTH_INTERVAL_MS = int(os.getenv("CLOUD_BRIDGE_HEALTH_INTERVAL_MS", "300000"))
+FOLDER_SYNC_ENABLED = os.getenv("CLOUD_BRIDGE_FOLDER_SYNC_ENABLED", "true").lower() in {
+    "1", "true", "yes", "on"
+}
+FOLDER_SYNC_DEBOUNCE_MS = int(os.getenv("CLOUD_BRIDGE_FOLDER_SYNC_DEBOUNCE_MS", "3000"))
+FOLDER_SYNC_STABLE_MS = int(os.getenv("CLOUD_BRIDGE_FOLDER_SYNC_STABLE_MS", "1500"))
 
 HEADERS = {"Authorization": f"Bearer {TOKEN}"}
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -309,6 +315,7 @@ def run_realtime_listener(
     stop_event: threading.Event,
     on_status: Callable[[str], None] | None = None,
     on_files: Callable[[list[Path]], None] | None = None,
+    on_folder_sync: Callable[[], None] | None = None,
 ) -> None:
     def on_signal(payload: dict[str, Any]) -> None:
         signal = payload.get("payload") if isinstance(payload, dict) else None
@@ -325,6 +332,9 @@ def run_realtime_listener(
                 files = state.pull_remote_files()
                 if on_files:
                     on_files(files)
+            elif kind == "folder_sync":
+                if on_folder_sync:
+                    on_folder_sync()
             else:
                 files = state.sync_remote()
                 if on_files:
@@ -351,6 +361,16 @@ def main() -> int:
 
     state = SyncState()
     stop_event = threading.Event()
+    folder_sync = FolderSyncCoordinator(
+        DOWNLOAD_DIR,
+        default_sync_script(),
+        DEVICE_ID,
+        log,
+        FOLDER_SYNC_DEBOUNCE_MS / 1000,
+        FOLDER_SYNC_STABLE_MS / 1000,
+    )
+    if FOLDER_SYNC_ENABLED:
+        folder_sync.start()
     last_fallback_at = 0.0
     last_health_at = 0.0
     local_interval = max(LOCAL_CLIPBOARD_INTERVAL_MS, 500) / 1000
@@ -358,7 +378,11 @@ def main() -> int:
     health_interval = max(HEALTH_INTERVAL_MS, 30000) / 1000
 
     if realtime_available():
-        thread = threading.Thread(target=run_realtime_listener, args=(state, stop_event), daemon=True)
+        thread = threading.Thread(
+            target=run_realtime_listener,
+            args=(state, stop_event, None, None, folder_sync.trigger_remote),
+            daemon=True,
+        )
         thread.start()
     else:
         log("Realtime disabled or not configured; using fallback polling only.")
@@ -378,6 +402,7 @@ def main() -> int:
 
         except KeyboardInterrupt:
             stop_event.set()
+            folder_sync.stop()
             log("Agent stopped.")
             return 0
         except Exception as exc:

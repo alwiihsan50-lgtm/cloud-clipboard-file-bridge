@@ -96,9 +96,11 @@ D:\Cloud Bridge
 ```
 
 Folder yang sama juga dapat disinkronkan dua arah dengan aplikasi Files iPhone
-melalui gateway WebDAV terisolasi. Runtime `rclone`, task otomatis, dan petunjuk
-iPhone ada di `windows_sync/`. Storage sinkronisasi memakai bucket private
-`cloudbridge-sync`, terpisah dari file transfer sementara aplikasi.
+melalui gateway WebDAV terisolasi. Windows Agent memakai filesystem watcher dan
+Supabase Realtime agar sync mulai dalam beberapa detik; task 15 menit menjadi
+fallback. Runtime `rclone` dan petunjuk iPhone ada di `windows_sync/`. Storage
+sinkronisasi memakai bucket private `cloudbridge-sync`, terpisah dari file
+transfer sementara aplikasi.
 
 Windows Agent membuka koneksi Supabase Realtime supaya update dari iPhone terasa instan. Polling cloud fallback default adalah `300000ms` atau 5 menit.
 

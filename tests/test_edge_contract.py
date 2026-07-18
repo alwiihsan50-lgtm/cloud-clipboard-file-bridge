@@ -10,6 +10,10 @@ QUICK_MIGRATION = (
     ROOT / "supabase/migrations/20260716030758_cloudbridge_quick_actions_performance.sql"
 ).read_text(encoding="utf-8")
 PWA = (ROOT / "docs/app/index.html").read_text(encoding="utf-8")
+WINDOWS_AGENT = (ROOT / "windows_agent/agent.py").read_text(encoding="utf-8")
+FOLDER_SYNC = (ROOT / "windows_agent/folder_sync.py").read_text(encoding="utf-8")
+SYNC_SCRIPT = (ROOT / "windows_sync/sync-cloudbridge.ps1").read_text(encoding="utf-8")
+SYNC_TASK = (ROOT / "windows_sync/install-sync-task.ps1").read_text(encoding="utf-8")
 
 
 def test_file_api_only_keeps_transfer_history_and_pin_contracts():
@@ -117,3 +121,14 @@ def test_quick_actions_setup_is_available_in_manager():
 def test_quick_push_accepts_ios_shortcuts_raw_body():
     assert 'contentType.includes("application/json")' in FUNCTION
     assert 'content = await req.text();' in FUNCTION
+
+
+def test_folder_sync_uses_realtime_watcher_and_slow_fallback():
+    assert 'broadcastChange("folder_sync"' in FUNCTION
+    assert 'req.headers.get("X-CloudBridge-Device")' in FUNCTION
+    assert 'kind == "folder_sync"' in WINDOWS_AGENT
+    assert "Observer()" in FOLDER_SYNC
+    assert "trigger_local" in FOLDER_SYNC
+    assert "trigger_remote" in FOLDER_SYNC
+    assert '--header "X-CloudBridge-Device: $DeviceId"' in SYNC_SCRIPT
+    assert "New-TimeSpan -Minutes 15" in SYNC_TASK
