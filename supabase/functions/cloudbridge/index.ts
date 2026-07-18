@@ -4,6 +4,9 @@ import { createClient } from "@supabase/supabase-js";
 const PROJECT_REF = "ajlkfzgpheegmwsnspxw";
 const APP_NAME = "CloudBridge";
 const BUCKET = Deno.env.get("SUPABASE_STORAGE_BUCKET") ?? "cloudbridge-files";
+const SYNC_BUCKET = Deno.env.get("CLOUD_BRIDGE_SYNC_BUCKET") ??
+  "cloudbridge-sync";
+const WEBDAV_USER = Deno.env.get("CLOUD_BRIDGE_WEBDAV_USER") ?? "cloudbridge";
 const FILE_TTL_SECONDS = Number(
   Deno.env.get("CLOUD_BRIDGE_FILE_TTL_SECONDS") ?? "86400",
 );
@@ -125,6 +128,251 @@ function bearerToken(req: Request): string | null {
   const header = req.headers.get("Authorization");
   if (!header?.startsWith("Bearer ")) return null;
   return header.slice("Bearer ".length).trim();
+}
+
+function xmlEscape(value: string): string {
+  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;").replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+function webdavStoragePath(path: string): string | null {
+  const raw = path === "/webdav" ? "" : path.replace(/^\/webdav\/?/, "");
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+  const parts = decoded.split("/").filter(Boolean);
+  if (parts.some((part) => part === "." || part === ".." || part.includes("\0"))) {
+    return null;
+  }
+  return parts.join("/");
+}
+
+function webdavHref(storagePath: string, directory = false): string {
+  const encoded = storagePath.split("/").filter(Boolean).map(encodeURIComponent)
+    .join("/");
+  return `/functions/v1/cloudbridge/webdav/${encoded}${
+    directory && encoded ? "/" : ""
+  }`;
+}
+
+function webdavAuth(req: Request): boolean {
+  const expected = Deno.env.get("CLOUD_BRIDGE_WEBDAV_TOKEN");
+  const header = req.headers.get("Authorization");
+  if (!expected || !header?.startsWith("Basic ")) return false;
+  try {
+    const decoded = atob(header.slice(6));
+    const separator = decoded.indexOf(":");
+    if (separator < 0) return false;
+    const user = decoded.slice(0, separator);
+    const password = decoded.slice(separator + 1);
+    return user === WEBDAV_USER && password === expected;
+  } catch {
+    return false;
+  }
+}
+
+function webdavUnauthorized(): Response {
+  return new Response("Authentication required", {
+    status: 401,
+    headers: {
+      "WWW-Authenticate": 'Basic realm="CloudBridge Files"',
+      "Content-Type": "text/plain; charset=utf-8",
+    },
+  });
+}
+
+type WebdavEntry = {
+  name: string;
+  id: string | null;
+  updated_at?: string | null;
+  created_at?: string | null;
+  metadata?: { size?: number; mimetype?: string; eTag?: string } | null;
+};
+
+async function listSyncDirectory(prefix: string): Promise<WebdavEntry[]> {
+  const entries: WebdavEntry[] = [];
+  for (let offset = 0;; offset += 1000) {
+    const { data, error } = await supabase.storage.from(SYNC_BUCKET).list(prefix, {
+      limit: 1000,
+      offset,
+      sortBy: { column: "name", order: "asc" },
+    });
+    if (error) throw error;
+    const page = (data ?? []) as WebdavEntry[];
+    entries.push(...page.filter((entry) => entry.name !== ".cloudbridge-keep"));
+    if (page.length < 1000) break;
+  }
+  return entries;
+}
+
+async function statSyncPath(storagePath: string): Promise<{
+  isDirectory: boolean;
+  entry: WebdavEntry | null;
+} | null> {
+  if (!storagePath) return { isDirectory: true, entry: null };
+  const parts = storagePath.split("/");
+  const name = parts.pop()!;
+  const parent = parts.join("/");
+  const entries = await listSyncDirectory(parent);
+  const entry = entries.find((item) => item.name === name);
+  if (!entry) return null;
+  return { isDirectory: !entry.id, entry };
+}
+
+function webdavPropertyResponse(
+  storagePath: string,
+  isDirectory: boolean,
+  entry: WebdavEntry | null,
+): string {
+  const name = storagePath.split("/").pop() || "CloudBridge";
+  const modified = entry?.updated_at ?? entry?.created_at ?? nowIso();
+  const size = isDirectory ? 0 : Number(entry?.metadata?.size ?? 0);
+  const contentType = entry?.metadata?.mimetype ?? "application/octet-stream";
+  const etag = entry?.metadata?.eTag ?? entry?.id ?? "";
+  return `<d:response><d:href>${xmlEscape(webdavHref(storagePath, isDirectory))}</d:href><d:propstat><d:prop><d:displayname>${
+    xmlEscape(name)
+  }</d:displayname><d:resourcetype>${
+    isDirectory ? "<d:collection/>" : ""
+  }</d:resourcetype><d:getcontentlength>${size}</d:getcontentlength><d:getcontenttype>${
+    xmlEscape(contentType)
+  }</d:getcontenttype><d:getlastmodified>${
+    new Date(modified).toUTCString()
+  }</d:getlastmodified><d:getetag>${xmlEscape(etag)}</d:getetag></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>`;
+}
+
+async function collectSyncFiles(prefix: string): Promise<string[]> {
+  const result: string[] = [];
+  const entries = await listSyncDirectory(prefix);
+  for (const entry of entries) {
+    const path = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.id) result.push(path);
+    else result.push(...await collectSyncFiles(path));
+  }
+  const marker = prefix ? `${prefix}/.cloudbridge-keep` : ".cloudbridge-keep";
+  result.push(marker);
+  return result;
+}
+
+async function handleWebdav(req: Request, path: string): Promise<Response> {
+  if (!webdavAuth(req)) return webdavUnauthorized();
+  const storagePath = webdavStoragePath(path);
+  if (storagePath === null) return new Response("Invalid path", { status: 400 });
+  const commonHeaders = { "DAV": "1", "MS-Author-Via": "DAV" };
+
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        ...commonHeaders,
+        "Allow": "OPTIONS, PROPFIND, GET, HEAD, PUT, DELETE, MKCOL, MOVE, COPY",
+      },
+    });
+  }
+
+  if (req.method === "PROPFIND") {
+    const depth = req.headers.get("Depth") ?? "1";
+    if (depth === "infinity") return new Response("Depth infinity is disabled", { status: 403 });
+    const stat = await statSyncPath(storagePath);
+    if (!stat) return new Response("Not found", { status: 404 });
+    const responses = [webdavPropertyResponse(storagePath, stat.isDirectory, stat.entry)];
+    if (depth !== "0" && stat.isDirectory) {
+      const entries = await listSyncDirectory(storagePath);
+      for (const entry of entries) {
+        const childPath = storagePath ? `${storagePath}/${entry.name}` : entry.name;
+        responses.push(webdavPropertyResponse(childPath, !entry.id, entry));
+      }
+    }
+    return new Response(
+      `<?xml version="1.0" encoding="utf-8"?><d:multistatus xmlns:d="DAV:">${responses.join("")}</d:multistatus>`,
+      { status: 207, headers: { ...commonHeaders, "Content-Type": "application/xml; charset=utf-8" } },
+    );
+  }
+
+  if (req.method === "GET" || req.method === "HEAD") {
+    const stat = await statSyncPath(storagePath);
+    if (!stat) return new Response("Not found", { status: 404 });
+    if (stat.isDirectory) return new Response("Collection", { status: 200, headers: commonHeaders });
+    if (req.method === "HEAD") {
+      return new Response(null, {
+        status: 200,
+        headers: {
+          ...commonHeaders,
+          "Content-Length": String(stat.entry?.metadata?.size ?? 0),
+          "Content-Type": stat.entry?.metadata?.mimetype ?? "application/octet-stream",
+        },
+      });
+    }
+    const { data, error } = await supabase.storage.from(SYNC_BUCKET).download(storagePath);
+    if (error || !data) return new Response("Not found", { status: 404 });
+    return new Response(data, {
+      status: 200,
+      headers: {
+        ...commonHeaders,
+        "Content-Type": stat.entry?.metadata?.mimetype ?? data.type ?? "application/octet-stream",
+      },
+    });
+  }
+
+  if (req.method === "PUT") {
+    if (!storagePath) return new Response("A filename is required", { status: 409 });
+    const bytes = new Uint8Array(await req.arrayBuffer());
+    const { error } = await supabase.storage.from(SYNC_BUCKET).upload(storagePath, bytes, {
+      contentType: req.headers.get("Content-Type") ?? "application/octet-stream",
+      upsert: true,
+    });
+    if (error) return new Response(error.message, { status: 500 });
+    return new Response(null, { status: 201, headers: commonHeaders });
+  }
+
+  if (req.method === "MKCOL") {
+    if (!storagePath) return new Response(null, { status: 405 });
+    const marker = `${storagePath}/.cloudbridge-keep`;
+    const { error } = await supabase.storage.from(SYNC_BUCKET).upload(
+      marker,
+      new Uint8Array(),
+      { contentType: "application/octet-stream", upsert: true },
+    );
+    if (error) return new Response(error.message, { status: 500 });
+    return new Response(null, { status: 201, headers: commonHeaders });
+  }
+
+  if (req.method === "DELETE") {
+    const stat = await statSyncPath(storagePath);
+    if (!stat) return new Response(null, { status: 404 });
+    const paths = stat.isDirectory ? await collectSyncFiles(storagePath) : [storagePath];
+    for (let index = 0; index < paths.length; index += 1000) {
+      const { error } = await supabase.storage.from(SYNC_BUCKET).remove(paths.slice(index, index + 1000));
+      if (error) return new Response(error.message, { status: 500 });
+    }
+    return new Response(null, { status: 204, headers: commonHeaders });
+  }
+
+  if (req.method === "MOVE" || req.method === "COPY") {
+    const destination = req.headers.get("Destination");
+    if (!destination) return new Response("Destination is required", { status: 400 });
+    const destinationPath = webdavStoragePath(normalizePath(new URL(destination).pathname));
+    if (destinationPath === null || !destinationPath) {
+      return new Response("Invalid destination", { status: 400 });
+    }
+    const stat = await statSyncPath(storagePath);
+    if (!stat) return new Response("Not found", { status: 404 });
+    if (stat.isDirectory) return new Response("Directory move is not supported", { status: 409 });
+    const operation = req.method === "MOVE"
+      ? supabase.storage.from(SYNC_BUCKET).move(storagePath, destinationPath)
+      : supabase.storage.from(SYNC_BUCKET).copy(storagePath, destinationPath);
+    const { error } = await operation;
+    if (error) return new Response(error.message, { status: 500 });
+    return new Response(null, { status: 201, headers: commonHeaders });
+  }
+
+  return new Response("Method not allowed", {
+    status: 405,
+    headers: { ...commonHeaders, "Allow": "OPTIONS, PROPFIND, GET, HEAD, PUT, DELETE, MKCOL, MOVE, COPY" },
+  });
 }
 
 async function requireAuth(req: Request): Promise<AuthContext | Response> {
@@ -335,12 +583,16 @@ async function maybeCleanup(): Promise<void> {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
   try {
     const url = new URL(req.url);
     const path = normalizePath(url);
+
+    if (path === "/webdav" || path.startsWith("/webdav/")) {
+      return await handleWebdav(req, path);
+    }
+    if (req.method === "OPTIONS") {
+      return new Response("ok", { headers: corsHeaders });
+    }
 
     if (req.method === "GET" && path === "/health") {
       return json({ ok: true, service: APP_NAME, mode: "supabase-edge" });
