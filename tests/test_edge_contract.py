@@ -14,6 +14,7 @@ WINDOWS_AGENT = (ROOT / "windows_agent/agent.py").read_text(encoding="utf-8")
 FOLDER_SYNC = (ROOT / "windows_agent/folder_sync.py").read_text(encoding="utf-8")
 SYNC_SCRIPT = (ROOT / "windows_sync/sync-cloudbridge.ps1").read_text(encoding="utf-8")
 SYNC_TASK = (ROOT / "windows_sync/install-sync-task.ps1").read_text(encoding="utf-8")
+HIDDEN_SYNC_LAUNCHER = (ROOT / "windows_sync/run-sync-hidden.vbs").read_text(encoding="utf-8")
 
 
 def test_file_api_only_keeps_transfer_history_and_pin_contracts():
@@ -132,3 +133,5 @@ def test_folder_sync_uses_realtime_watcher_and_slow_fallback():
     assert "trigger_remote" in FOLDER_SYNC
     assert '--header "X-CloudBridge-Device: $DeviceId"' in SYNC_SCRIPT
     assert "New-TimeSpan -Minutes 15" in SYNC_TASK
+    assert "-Execute 'wscript.exe'" in SYNC_TASK
+    assert "shell.Run command, 0, True" in HIDDEN_SYNC_LAUNCHER

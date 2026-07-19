@@ -9,6 +9,7 @@ Runtime Windows:
 - `rclone` backend WebDAV
 - Windows Agent memantau perubahan lokal dan event Supabase Realtime
 - task `CloudBridge Folder Sync` berjalan setiap 15 menit sebagai fallback
+- fallback memakai launcher `wscript.exe` tersembunyi tanpa jendela PowerShell
 - config dan log di `%LOCALAPPDATA%\CloudBridge\Sync`
 
 Endpoint iPhone/File Provider:

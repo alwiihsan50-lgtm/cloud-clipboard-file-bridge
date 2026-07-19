@@ -1,16 +1,19 @@
 param(
     [string]$LocalPath = 'D:\Cloud Bridge',
-    [string]$SourceScript = (Join-Path $PSScriptRoot 'sync-cloudbridge.ps1')
+    [string]$SourceScript = (Join-Path $PSScriptRoot 'sync-cloudbridge.ps1'),
+    [string]$HiddenLauncher = (Join-Path $PSScriptRoot 'run-sync-hidden.vbs')
 )
 
 $ErrorActionPreference = 'Stop'
 $stateDir = Join-Path $env:LOCALAPPDATA 'CloudBridge\Sync'
 $installedScript = Join-Path $stateDir 'sync-cloudbridge.ps1'
+$installedLauncher = Join-Path $stateDir 'run-sync-hidden.vbs'
 New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
 Copy-Item -LiteralPath $SourceScript -Destination $installedScript -Force
+Copy-Item -LiteralPath $HiddenLauncher -Destination $installedLauncher -Force
 
-$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument (
-    "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$installedScript`" -LocalPath `"$LocalPath`""
+$action = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument (
+    "`"$installedLauncher`" `"$LocalPath`""
 )
 $trigger = New-ScheduledTaskTrigger `
     -Once `
